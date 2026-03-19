@@ -79,7 +79,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager'
@@ -89,7 +89,7 @@ const countdownText = ref('00:00:00')
 const mode = ref('countdown')
 const pomodoroRunning = ref(false)
 const breakRunning = ref(false)
-let countdownInterval: number | null = null
+let countdownInterval = null
 
 const remainingSeconds = computed(() => {
   const now = new Date()
@@ -135,7 +135,7 @@ function resetCountdown() {
   countdownText.value = '00:00:00'
 }
 
-function setMode(newMode: string) {
+function setMode(newMode) {
   mode.value = newMode
   resetCountdown()
   if (newMode === 'countdown') {
@@ -160,7 +160,7 @@ function startPomodoro() {
       .padStart(2, '0')}`
 
     if (seconds <= 0) {
-      clearInterval(countdownInterval!)
+      clearInterval(countdownInterval)
       pomodoroRunning.value = false
       alert('工作时间结束！开始休息吧~')
     }
@@ -184,7 +184,7 @@ function startBreak() {
       .padStart(2, '0')}`
 
     if (seconds <= 0) {
-      clearInterval(countdownInterval!)
+      clearInterval(countdownInterval)
       breakRunning.value = false
       alert('休息结束！开始工作吧~')
     }
@@ -199,7 +199,7 @@ async function minimizeToTray() {
   }
 }
 
-const clipboardList = ref<string[]>([])
+const clipboardList = ref([])
 const MAX_HISTORY = 50
 
 const sensitiveWords = ['摸鱼', '游戏', '色情', '赌博']
@@ -225,7 +225,7 @@ async function readClipboard() {
   }
 }
 
-async function copyToClipboard(text: string) {
+async function copyToClipboard(text) {
   try {
     await writeText(text)
     alert('已复制到剪贴板')
@@ -238,7 +238,7 @@ function clearClipboard() {
   clipboardList.value = []
 }
 
-let clipboardInterval: number | null = null
+let clipboardInterval = null
 
 onMounted(() => {
   startCountdown()

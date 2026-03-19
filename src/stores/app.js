@@ -31,6 +31,7 @@ export const useAppStore = defineStore('app', () => {
 
   function applyTheme() {
     document.documentElement.classList.toggle('dark', isDark.value)
+    document.documentElement.style.colorScheme = isDark.value ? 'dark' : 'light'
   }
 
   function toggleSidebar() {

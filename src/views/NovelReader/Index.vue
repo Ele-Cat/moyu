@@ -68,16 +68,16 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { load } from '@tauri-apps/plugin-store'
 
-const bookList = ref<Array<{ name: string; path: string }>>([])
-const currentBook = ref<{ name: string; path: string } | null>(null)
+const bookList = ref([])
+const currentBook = ref(null)
 const bookContent = ref('')
-const chapters = ref<Array<{ title: string; content: string[] }>>([])
+const chapters = ref([])
 const showSettings = ref(false)
 
 const fontSize = ref(16)
@@ -104,7 +104,7 @@ async function selectFolder() {
         path: selected,
         extensions: ['txt'],
       })
-      bookList.value = files as typeof bookList.value
+      bookList.value = files
     }
   } catch (e) {
     console.error('选择文件夹失败:', e)
@@ -112,10 +112,10 @@ async function selectFolder() {
   }
 }
 
-async function openBook(book: { name: string; path: string }) {
+async function openBook(book) {
   try {
     const content = await invoke('read_novel_content', { path: book.path })
-    bookContent.value = content as string
+    bookContent.value = content
     currentBook.value = book
     parseChapters()
     await loadReadingProgress()
@@ -127,8 +127,8 @@ async function openBook(book: { name: string; path: string }) {
 
 function parseChapters() {
   const lines = bookContent.value.split('\n')
-  const parsed: Array<{ title: string; content: string[] }> = []
-  let currentChapter = { title: '', content: [] as string[] }
+  const parsed = []
+  let currentChapter = { title: '', content: [] }
 
   const chapterPattern = /^(第[一二三四五六七八九十\d]+章|Chapter \d+)/
 
@@ -177,11 +177,11 @@ async function saveSettings() {
 async function loadReadingProgress() {
   try {
     const store = await load('settings.json', { autoSave: false, defaults: {} })
-    const settings = await store.get<{
-      fontSize: number
-      bgColor: string
-      lineHeight: string
-    }>('novelSettings')
+    const settings = await store.get({
+      fontSize: 'number',
+      bgColor: '',
+      lineHeight: '',
+    }, 'novelSettings')
 
     if (settings) {
       fontSize.value = settings.fontSize || 16

@@ -20,13 +20,12 @@
 ```
 ├── src/                      # 前端源码
 │   ├── router/               # 路由配置
-│   │   └── index.ts
+│   │   └── index.js
 │   ├── views/                # 页面组件
 │   │   └── Home.vue
 │   ├── assets/               # 静态资源
 │   ├── App.vue               # 根组件
-│   ├── main.ts               # 入口文件
-│   └── shims-vue.d.ts        # Vue 类型声明
+│   ├── main.js               # 入口文件
 │
 ├── src-tauri/                # Rust 后端
 │   ├── src/
@@ -39,7 +38,7 @@
 │
 ├── public/                   # 公共资源
 ├── index.html                # HTML 入口
-├── vite.config.ts            # Vite 配置
+├── vite.config.js            # Vite 配置
 ├── tsconfig.json             # TypeScript 配置
 └── package.json               # Node 依赖
 ```

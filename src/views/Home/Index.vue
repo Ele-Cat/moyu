@@ -33,12 +33,12 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-function goTo(path: string) {
+function goTo(path) {
   router.push(path)
 }
 </script>

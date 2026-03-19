@@ -47,7 +47,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { get } from '@/utils/useApi'
+import { get } from '@/hooks/useApi'
 import { openUrl } from '@tauri-apps/plugin-opener'
 
 const categories = [

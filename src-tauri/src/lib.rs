@@ -254,18 +254,13 @@ pub fn run() {
                 let shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::Backquote);
 
                 let window_clone = window.clone();
-                app.handle().plugin(
-                    tauri_plugin_global_shortcut::Builder::new()
-                        .with_handler(move |_app, _shortcut, event| {
-                            if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                                let _ = window_clone.hide();
-                                log::info!("老板键触发，窗口已隐藏");
-                            }
-                        })
-                        .build(),
-                )?;
+                app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
+                    if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        let _ = window_clone.hide();
+                        log::info!("老板键触发，窗口已隐藏");
+                    }
+                })?;
 
-                app.global_shortcut().register(shortcut)?;
                 log::info!("老板键 Ctrl+~ 已注册");
             }
 

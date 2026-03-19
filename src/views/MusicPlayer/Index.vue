@@ -76,15 +76,15 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { convertFileSrc } from '@tauri-apps/api/core'
 
-const musicList = ref<Array<{ name: string; path: string }>>([])
+const musicList = ref([])
 const currentIndex = ref(-1)
-const currentMusic = ref<{ name: string; path: string } | null>(null)
+const currentMusic = ref(null)
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const currentTime = ref(0)
@@ -106,7 +106,7 @@ async function selectFolder() {
         path: selected,
         extensions: ['mp3', 'flac', 'wav', 'ogg', 'm4a'],
       })
-      musicList.value = files as typeof musicList.value
+      musicList.value = files
 
       if (musicList.value.length > 0) {
         playMusic(0)
@@ -118,7 +118,7 @@ async function selectFolder() {
   }
 }
 
-function playMusic(index: number) {
+function playMusic(index) {
   if (!audioRef.value) return
 
   currentIndex.value = index
@@ -165,10 +165,10 @@ function nextMusic() {
   }
 }
 
-function seekMusic(event: Event) {
+function seekMusic(event) {
   if (!audioRef.value) return
 
-  const value = parseInt((event.target as HTMLInputElement).value)
+  const value = parseInt((event.target).value)
   audioRef.value.currentTime = value
   currentTime.value = value
 }
@@ -203,7 +203,7 @@ function onLoaded() {
   }
 }
 
-function formatTime(seconds: number): string {
+function formatTime(seconds) {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`

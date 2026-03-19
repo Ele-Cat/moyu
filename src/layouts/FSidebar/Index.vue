@@ -24,18 +24,22 @@
   </aside>
 </template>
 
-<script setup lang="ts">
-import { computed } from 'vue'
+<script setup>
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
-defineProps<{
-  collapsed: boolean
-}>()
+const visible = ref(false)
 
-const emit = defineEmits<{
-  (e: 'open-settings'): void
-  (e: 'toggle'): void
-}>()
+function handleConfirm() {
+  console.log('确认')
+  visible.value = false
+}
+
+defineProps({
+  collapsed: Boolean
+})
+
+const emit = defineEmits(['open-settings', 'toggle'])
 
 const router = useRouter()
 const route = useRoute()
@@ -48,11 +52,11 @@ const navItems = [
   { path: '/music', label: '听音乐', icon: '🎵' },
   { path: '/news', label: '刷热点', icon: '📰' },
   { path: '/wallpaper', label: '换壁纸', icon: '🖼️' },
-  { path: '/game', label: '小游戏', icon: '🎮' },
-  { path: '/tools', label: '工具', icon: '🛠️' }
+  { path: '/game', label: '玩游戏', icon: '🎮' },
+  { path: '/tools', label: '小工具', icon: '🛠️' }
 ]
 
-function goTo(path: string) {
+function goTo(path) {
   router.push(path)
 }
 </script>
@@ -160,7 +164,7 @@ function goTo(path: string) {
   align-items: center;
   justify-content: center;
   z-index: 10;
-  box-shadow: 4px  -4px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 4px 0 4px rgba(0, 0, 0, 0.08);
 
   .icon {
     filter: invert(0);
