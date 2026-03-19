@@ -1,9 +1,9 @@
 <template>
-  <div class="app-container" :class="{ 'sidebar-collapsed': appStore.sidebarCollapsed }">
+  <div class="app-container">
     <FHeader v-if="!isVideoWallpaper" :isDark="isDark" />
 
     <div class="main-layout">
-      <FSidebar v-if="!isVideoWallpaper" :collapsed="appStore.sidebarCollapsed" @open-settings="openSettings" @toggle="appStore.toggleSidebar" />
+      <FSidebar v-if="!isVideoWallpaper" />
 
       <el-scrollbar class="content" :class="{ 'fullscreen': isVideoWallpaper }">
         <router-view v-slot="{ Component }">
@@ -21,7 +21,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useAppStore } from '@/stores/app'
+import { useAppStore } from '@/stores/modules/app'
 import { useDark } from '@/hooks/useDark'
 import FHeader from '@/layouts/FHeader/Index.vue'
 import FSidebar from '@/layouts/FSidebar/Index.vue'
@@ -29,17 +29,9 @@ import Settings from '@/components/Settings/Index.vue'
 
 const appStore = useAppStore()
 const route = useRoute()
-const { isDark, init: initDark, toggle: toggleDark, setDark } = useDark()
+const { isDark, init: initDark } = useDark()
 
 const isVideoWallpaper = computed(() => route.path === '/video-wallpaper')
-
-function openSettings() {
-  appStore.showSettings = true
-}
-
-function toggleTheme() {
-  toggleDark()
-}
 
 onMounted(() => {
   initDark()
@@ -74,7 +66,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* 路由切换动画 */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.2s ease;

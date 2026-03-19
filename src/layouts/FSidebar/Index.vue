@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar" :class="{ collapsed: collapsed }">
+  <aside class="sidebar" :class="{ collapsed: appStore.sidebarCollapsed }">
     <nav class="nav-menu">
       <div
         v-for="item in navItems"
@@ -9,16 +9,16 @@
         @click="goTo(item.path)"
       >
         <span class="nav-icon" :title="item.label">{{ item.icon }}</span>
-        <span class="nav-text" v-if="!collapsed">{{ item.label }}</span>
+        <span class="nav-text" v-if="!appStore.sidebarCollapsed">{{ item.label }}</span>
       </div>
     </nav>
     <div class="sidebar-footer">
-      <button class="settings-btn" @click="emit('open-settings')">
-        ⚙️ <span v-if="!collapsed">设置</span>
+      <button class="settings-btn" @click="appStore.showSettings = true">
+        ⚙️ <span v-if="!appStore.sidebarCollapsed">设置</span>
       </button>
     </div>
-    <button class="toggle-btn" @click="emit('toggle')">
-      <img v-if="collapsed" src="@/assets/svg/right-arrow.svg" alt="expand" class="icon" />
+    <button class="toggle-btn" @click="appStore.toggleSidebar">
+      <img v-if="appStore.sidebarCollapsed" src="@/assets/svg/right-arrow.svg" alt="expand" class="icon" />
       <img v-else src="@/assets/svg/left-arrow.svg" alt="collapse" class="icon" />
     </button>
   </aside>
@@ -27,17 +27,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAppStore } from '@/stores/modules/app'
 
-const visible = ref(false)
-
-function handleConfirm() {
-  console.log('确认')
-  visible.value = false
-}
-
-defineProps({
-  collapsed: Boolean
-})
+const appStore = useAppStore()
 
 const emit = defineEmits(['open-settings', 'toggle'])
 

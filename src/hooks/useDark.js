@@ -1,16 +1,21 @@
 import { ref, watch } from 'vue'
+import { useAppStore } from '@/stores/modules/app'
 
 const isDark = ref(false)
 const initialized = ref(false)
 
 export function useDark() {
+  function getAppStore() {
+    return useAppStore()
+  }
+
   function init() {
     if (initialized.value) return
     initialized.value = true
     
-    const savedTheme = localStorage.getItem('moyu-theme')
-    if (savedTheme !== null) {
-      isDark.value = savedTheme === 'dark'
+    const savedTheme = getAppStore().isDark
+    if (savedTheme !== null && savedTheme !== undefined) {
+      isDark.value = savedTheme
     }
     applyTheme()
   }
@@ -42,13 +47,13 @@ export function useDark() {
 
   function doToggle() {
     isDark.value = !isDark.value
-    localStorage.setItem('moyu-theme', isDark.value ? 'dark' : 'light')
+    getAppStore().isDark = isDark.value
     applyTheme()
   }
 
   function setDark(value) {
     isDark.value = value
-    localStorage.setItem('moyu-theme', value ? 'dark' : 'light')
+    getAppStore().isDark = value
     applyTheme()
   }
 

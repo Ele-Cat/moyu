@@ -30,7 +30,6 @@ const isMaximized = ref(false)
 
 function handleToggleTheme(e) {
   toggleDark(e)
-  emit('toggle-theme')
 }
 
 async function minimizeWindow() {

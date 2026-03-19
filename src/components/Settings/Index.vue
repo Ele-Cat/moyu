@@ -12,17 +12,6 @@
           <h3>外观设置</h3>
           
           <div class="setting-item">
-            <label>窗口透明度：{{ opacityPercent }}%</label>
-            <el-slider
-              v-model="opacityValue"
-              :min="30"
-              :max="100"
-              :step="5"
-              show-stops
-            />
-          </div>
-
-          <div class="setting-item">
             <label>暗黑模式</label>
             <el-switch
               v-model="isDark"
@@ -65,8 +54,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { useAppStore } from '@/stores/app'
+import { ref, computed } from 'vue'
 import { useDark } from '@/hooks/useDark'
 
 const props = defineProps({
@@ -75,34 +63,18 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-const appStore = useAppStore()
 const { isDark, setDark } = useDark()
 
 const activeTab = ref('appearance')
-const opacityValue = ref(100)
 
 const visible = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val)
 })
 
-const opacityPercent = computed(() => opacityValue.value)
-
-watch(() => appStore.showSettings, (val) => {
-  if (val) {
-    opacityValue.value = Math.round(appStore.windowOpacity * 100)
-  }
-})
-
 function handleThemeChange(val) {
   setDark(val)
 }
-
-watch(opacityValue, (val) => {
-  const opacity = val / 100
-  document.body.style.opacity = opacity.toString()
-  appStore.setOpacity(opacity)
-})
 </script>
 
 <style scoped>

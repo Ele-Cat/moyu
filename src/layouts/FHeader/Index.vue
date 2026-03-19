@@ -14,6 +14,7 @@ import TitleBarButtons from './TitleBarButtons.vue'
 
 <style scoped>
 .titlebar {
+  position: relative;
   height: var(--header-height);
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
   display: flex;
@@ -22,6 +23,7 @@ import TitleBarButtons from './TitleBarButtons.vue'
   padding: 0 10px;
   user-select: none;
   -webkit-app-region: drag;
+  z-index: 999999;
 }
 
 .titlebar-left {
