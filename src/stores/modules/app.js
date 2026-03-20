@@ -41,8 +41,12 @@ export const useAppStore = defineStore("app", {
     },
   },
   persist: {
-    key: 'moyu-app',
-    storage: localStorage,
-    paths: ['sidebarCollapsed', 'isDark', 'bossKeyEnabled'],
+    enabled: true,
+    strategies: [
+      {
+        storage: localStorage,
+        paths: ['sidebarCollapsed', 'isDark', 'bossKeyEnabled'],
+      },
+    ],
   },
 });
