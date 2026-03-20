@@ -182,11 +182,11 @@ async function startVideoWallpaper() {
       await setDesktopUnderlay(true, 'underlay')
     })
     
-    underlayWindow.on('tauri://close-requested', async () => {
-      underlayWindow = null
-      wallpaperStore.setVideoActive(false)
-      await invoke('refresh_wallpaper')
-    })
+    // underlayWindow.on('tauri://close-requested', async () => {
+    //   underlayWindow = null
+    //   wallpaperStore.setVideoActive(false)
+    //   await invoke('refresh_wallpaper')
+    // })
     
     wallpaperStore.setVideoActive(true)
     wallpaperStore.setCurrentVideoPath(selectedVideo.value)
@@ -210,7 +210,13 @@ async function stopVideoWallpaper() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  if (wallpaperStore.videoActive) {
+    const existingWindow = await WebviewWindow.getByLabel('underlay')
+    if (existingWindow) {
+      underlayWindow = existingWindow
+    }
+  }
   fetchOnlineVideos()
 })
 </script>

@@ -149,7 +149,7 @@ async function applyStaticWallpaper(wallpaper) {
 }
 
 function addToFavorites(wallpaper) {
-  store.addToFavorites({ url: wallpaper.url, type: 'image', name: wallpaper.name })
+  store.addToFavorites({ url: wallpaper.url, type: 'image', name: wallpaper.name, timestamp: Date.now() })
 }
 
 onMounted(async () => {

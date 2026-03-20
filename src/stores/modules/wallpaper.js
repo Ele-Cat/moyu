@@ -56,6 +56,7 @@ export const useWallpaperStore = defineStore("wallpaper", {
     },
     
     setVideoActive(active) {
+      console.log('active: ', active);
       this.videoActive = active;
     },
     

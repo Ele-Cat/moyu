@@ -1,23 +1,25 @@
 <template>
-  <el-config-provider :locale="locale" class="app-container">
-    <FHeader v-if="!isVideoWallpaper" :isDark="isDark" />
+  <div class="app-container">
+    <el-config-provider :locale="locale">
+      <FHeader v-if="!isVideoWallpaper" :isDark="isDark" />
 
-    <div class="main-layout">
-      <FSidebar v-if="!isVideoWallpaper" />
+      <div class="main-layout">
+        <FSidebar v-if="!isVideoWallpaper" />
 
-      <el-scrollbar class="content" :class="{ 'fullscreen': isVideoWallpaper }">
-        <router-view v-slot="{ Component }">
-          <transition name="fade-slide" mode="out-in">
-            <keep-alive :include="cachedViews">
-              <component style="overflow-x: hidden;" :is="Component" :key="route.path" />
-            </keep-alive>
-          </transition>
-        </router-view>
-      </el-scrollbar>
-    </div>
+        <el-scrollbar class="content" :class="{ 'fullscreen': isVideoWallpaper }">
+          <router-view v-slot="{ Component }">
+            <transition name="fade-slide" mode="out-in">
+              <keep-alive :include="cachedViews">
+                <component style="overflow-x: hidden;" :is="Component" :key="route.path" />
+              </keep-alive>
+            </transition>
+          </router-view>
+        </el-scrollbar>
+      </div>
 
-    <Settings v-model="appStore.showSettings" />
-  </el-config-provider>
+      <Settings v-model="appStore.showSettings" />
+    </el-config-provider>
+  </div>
 </template>
 
 <script setup>
