@@ -14,12 +14,22 @@
         <Favorite />
       </el-tab-pane>
     </el-tabs>
+    <div class="">
+      <el-button 
+        type="danger" 
+        size="small"
+        @click="stopVideoWallpaper"
+      >
+        停止壁纸
+      </el-button>
+    </div>
   </div>
 </template>
 
 <script setup>
 defineOptions({ name: 'Wallpaper' })
 import { ref } from 'vue'
+import { Select } from '@element-plus/icons-vue'
 import Static from './Static.vue'
 import Dynamic from './Dynamic.vue'
 import History from './History.vue'
