@@ -44,6 +44,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { setDesktopUnderlay } from 'tauri-plugin-desktop-underlay-api'
+import { invoke } from '@tauri-apps/api/core'
 
 const router = useRouter()
 let underlayWindow = null
@@ -55,10 +56,10 @@ function goTo(path) {
 async function toggleClock() {
   try {
     if (underlayWindow) {
-      console.log(11);
       await setDesktopUnderlay(false, 'underlay')
       await underlayWindow.close()
       underlayWindow = null
+      await invoke('refresh_wallpaper')
     } else {
       underlayWindow = new WebviewWindow('underlay', {
         url: '/video-wallpaper',
@@ -81,10 +82,6 @@ async function toggleClock() {
       
       underlayWindow.once('tauri://error', (e) => {
         console.error('窗口创建失败:', e)
-      })
-      
-      underlayWindow.on('tauri://close-requested', () => {
-        underlayWindow = null
       })
     }
   } catch (error) {

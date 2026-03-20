@@ -186,6 +186,14 @@ fn set_wallpaper(path: String) -> Result<String, String> {
     Ok("壁纸设置成功".to_string())
 }
 
+#[tauri::command]
+/// 刷新桌面壁纸
+fn refresh_wallpaper() -> Result<String, String> {
+    let current = wallpaper::get().map_err(|e| format!("获取壁纸失败: {}", e))?;
+    set_from_path(&current).map_err(|e| format!("刷新壁纸失败: {}", e))?;
+    Ok("壁纸已刷新".to_string())
+}
+
 /// 创建系统托盘图标
 fn create_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::{Menu, MenuItem};
@@ -285,6 +293,7 @@ pub fn run() {
             read_novel_content,
             fetch_news,
             set_wallpaper,
+            refresh_wallpaper,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
