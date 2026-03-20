@@ -6,7 +6,9 @@
       autoplay
       loop
       muted
+      src="https://oss.ytab.top/yy_video_wallpaper/02ed430b-b136-43e9-8539-0a2233749e9b.mp4"
     ></video>
+    <!-- <img class="video-player" src="https://oss.ytab.top/yy_video_wallpaper/02ed430b-b136-43e9-8539-0a2233749e9b.webp" alt=""> -->
   </div>
 </template>
 
@@ -20,19 +22,19 @@ const videoRef = ref(null)
 
 onMounted(() => {
   const path = route.query.path
-  if (path) {
-    const decodedPath = decodeURIComponent(path)
-    const videoPath = decodedPath.replace(/\\/g, '/')
-    console.log('Loading video from:', videoPath)
-    if (videoRef.value) {
-      videoRef.value.src = `file://${videoPath}`
-      videoRef.value.src = "https://oss.ytab.top/yy_video_wallpaper/02ed430b-b136-43e9-8539-0a2233749e9b.mp4"
-      videoRef.value.play()
-      videoRef.value.addEventListener('ended', () => {
-        videoRef.value.play()
-      })
-    }
-  }
+  // if (path) {
+  //   const decodedPath = decodeURIComponent(path)
+  //   const videoPath = decodedPath.replace(/\\/g, '/')
+  //   console.log('Loading video from:', videoPath)
+  //   if (videoRef.value) {
+  //     videoRef.value.src = `file://${videoPath}`
+  //     videoRef.value.src = "https://oss.ytab.top/yy_video_wallpaper/02ed430b-b136-43e9-8539-0a2233749e9b.mp4"
+  //     videoRef.value.play()
+  //     videoRef.value.addEventListener('ended', () => {
+  //       videoRef.value.play()
+  //     })
+  //   }
+  // }
 })
 
 async function stopVideoWallpaper() {

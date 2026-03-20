@@ -24,6 +24,12 @@
         <div class="module-name">实用工具</div>
         <div class="module-desc">倒计时/剪贴板</div>
       </div>
+
+      <div class="module-card" @click="toggleClock">
+        <div class="module-icon">🖥️</div>
+        <div class="module-name">视频壁纸</div>
+        <div class="module-desc">桌面底层视频</div>
+      </div>
     </div>
 
     <footer class="footer">
@@ -34,12 +40,56 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { setDesktopUnderlay } from 'tauri-plugin-desktop-underlay-api'
 
 const router = useRouter()
+let underlayWindow = null
 
 function goTo(path) {
   router.push(path)
+}
+
+async function toggleClock() {
+  try {
+    if (underlayWindow) {
+      console.log(11);
+      await setDesktopUnderlay(false, 'underlay')
+      await underlayWindow.close()
+      underlayWindow = null
+    } else {
+      underlayWindow = new WebviewWindow('underlay', {
+        url: '/video-wallpaper',
+        title: 'VideoWallpaper',
+        width: 1920,
+        height: 1080,
+        resizable: false,
+        transparent: true,
+        visible: true,
+        decorations: false,
+        alwaysOnBottom: true,
+        skipTaskbar: true,
+        fullscreen: true,
+      })
+      
+      underlayWindow.once('tauri://created', async () => {
+        console.log('窗口创建成功')
+        await setDesktopUnderlay(true, 'underlay')
+      })
+      
+      underlayWindow.once('tauri://error', (e) => {
+        console.error('窗口创建失败:', e)
+      })
+      
+      underlayWindow.on('tauri://close-requested', () => {
+        underlayWindow = null
+      })
+    }
+  } catch (error) {
+    console.error('操作窗口失败:', error)
+  }
 }
 </script>
 

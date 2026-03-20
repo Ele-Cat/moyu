@@ -41,6 +41,9 @@ importers:
       pinia-plugin-persist:
         specifier: ^1.0.0
         version: 1.0.0(pinia@2.3.1(typescript@5.6.3)(vue@3.5.30(typescript@5.6.3)))(vue@3.5.30(typescript@5.6.3))
+      tauri-plugin-desktop-underlay-api:
+        specifier: ^0.2.1
+        version: 0.2.1
       vue:
         specifier: ^3.5.13
         version: 3.5.30(typescript@5.6.3)
@@ -787,6 +790,9 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
+  tauri-plugin-desktop-underlay-api@0.2.1:
+    resolution: {integrity: sha512-LuTyXlCEES9BZR9PhwjgVJ/slGD+njHb6ozjNSaKK6RySbfyCLEE8yl2NehCE/muYWHuX6DAxdrp2nx1ZcEDUQ==}
+
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
@@ -1528,6 +1534,10 @@ snapshots:
   scule@1.3.0: {}
 
   source-map-js@1.2.1: {}
+
+  tauri-plugin-desktop-underlay-api@0.2.1:
+    dependencies:
+      '@tauri-apps/api': 2.10.1
 
   tinyglobby@0.2.15:
     dependencies:

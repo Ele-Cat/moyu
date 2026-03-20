@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "摸鱼小助手权限配置",
-  "windows": ["main"],
+  "windows": ["main", "underlay"],
   "permissions": [
     "core:default",
     "opener:default",
@@ -27,6 +27,8 @@
     "dialog:allow-open",
     "fs:default",
     "fs:allow-read",
-    "fs:allow-exists"
+    "fs:allow-exists",
+    "desktop-underlay:default",
+    "core:webview:allow-create-webview-window"
   ]
 }
