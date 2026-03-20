@@ -180,9 +180,46 @@ async fn fetch_news(url: String) -> Result<String, String> {
 use wallpaper::set_from_path;
 
 #[tauri::command]
-/// 设置桌面壁纸
-fn set_wallpaper(url: String) -> Result<String, String> {
-    set_from_path(&url).map_err(|e| format!("设置壁纸失败: {}", e))?;
+/// 设置桌面壁纸（支持网络图片）
+async fn set_wallpaper(url: String) -> Result<String, String> {
+    use std::path::PathBuf;
+    
+    let path = if url.starts_with("http://") || url.starts_with("https://") {
+        let cache_dir = dirs::cache_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("wallpaper_cache");
+        
+        std::fs::create_dir_all(&cache_dir)
+            .map_err(|e| format!("创建缓存目录失败: {}", e))?;
+        
+        let file_name = format!(
+            "wallpaper_{}.jpg",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+        );
+        
+        let local_path = cache_dir.join(file_name);
+        
+        let response = reqwest::get(&url)
+            .await
+            .map_err(|e| format!("下载图片失败: {}", e))?;
+        
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| format!("读取图片数据失败: {}", e))?;
+        
+        std::fs::write(&local_path, &bytes)
+            .map_err(|e| format!("保存图片失败: {}", e))?;
+        
+        local_path.to_string_lossy().to_string()
+    } else {
+        url
+    };
+    
+    set_from_path(&path).map_err(|e| format!("设置壁纸失败: {}", e))?;
     Ok("壁纸设置成功".to_string())
 }
 

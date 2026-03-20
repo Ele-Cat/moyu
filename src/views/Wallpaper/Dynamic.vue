@@ -1,47 +1,84 @@
 <template>
   <div class="dynamic-wallpaper">
-    <div class="section">
-      <h3>本地视频</h3>
-      <div class="local-video">
-        <button @click="selectVideo">选择本地视频</button>
-        <div v-if="selectedVideo" class="selected-info">
-          <span>已选择: {{ selectedVideo }}</span>
+    <div class="tab-header">
+      <div class="category-tabs">
+        <div 
+          :class="['cat-item', { active: activeTab === 'online' }]"
+          @click="activeTab = 'online'; fetchOnlineVideos()"
+        >
+          在线视频
         </div>
+        <div 
+          :class="['cat-item', { active: activeTab === 'local' }]"
+          @click="activeTab = 'local'"
+        >
+          本地视频
+        </div>
+      </div>
+      <el-button 
+        v-if="wallpaperStore.videoActive"
+        type="danger" 
+        size="small"
+        @click="stopVideoWallpaper"
+      >
+        停止壁纸
+      </el-button>
+    </div>
+    
+    <template v-if="activeTab === 'online'">
+      <el-scrollbar>
+        <div class="video-grid">
+          <div 
+            v-for="video in onlineVideos" 
+            :key="video.id"
+            class="video-item"
+            @click="previewVideo(video)"
+          >
+            <img :src="video.image" :alt="video.name" />
+            <div class="hover-actions">
+              <el-icon title="预览"><VideoPlay /></el-icon>
+            </div>
+          </div>
+        </div>
+      </el-scrollbar>
+      <div class="pagination-wrapper" v-if="total > 0">
+        <el-pagination
+          v-model:current-page="pageNo"
+          :page-size="20"
+          :total="total"
+          layout="total, prev, pager, next"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </template>
+    
+    <div v-if="activeTab === 'local'" class="local-section">
+      <el-button type="primary" @click="selectVideo">选择本地视频</el-button>
+      <div v-if="selectedVideo" class="selected-info">
+        <span>已选择: {{ selectedVideo }}</span>
       </div>
       
-      <div class="actions">
-        <button 
-          class="start-btn" 
+      <div class="actions" v-if="selectedVideo && !wallpaperStore.videoActive">
+        <el-button 
+          type="primary" 
           @click="startVideoWallpaper"
-          :disabled="!selectedVideo || store.videoActive"
         >
-          {{ store.videoActive ? '已启动' : '启动视频壁纸' }}
-        </button>
-        <button 
-          class="stop-btn" 
-          @click="stopVideoWallpaper"
-        >
-          停止
-        </button>
+          启动视频壁纸
+        </el-button>
       </div>
     </div>
     
-    <div class="section">
-      <h3>在线视频</h3>
-      <div class="online-videos">
-        <div 
-          v-for="video in onlineVideos" 
-          :key="video.id"
-          class="video-item"
-          @click="selectOnlineVideo(video)"
-        >
-          <div class="video-thumb">{{ video.thumb }}</div>
-          <div class="video-name">{{ video.name }}</div>
+    <div v-if="previewing" class="preview-modal" @click="previewing = null">
+      <div class="preview-content" @click.stop>
+        <video :src="previewing.videoUrl" controls autoplay muted></video>
+        <div class="preview-actions">
+          <el-button type="primary" @click="applyVideoWallpaper(previewing)">设为壁纸</el-button>
+          <el-button @click="previewing = null">关闭</el-button>
         </div>
       </div>
     </div>
     
-    <div v-if="store.videoActive" class="video-tip">
+    <div v-if="wallpaperStore.videoActive" class="video-tip">
       视频壁纸已启动
     </div>
   </div>
@@ -49,23 +86,54 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { VideoPlay } from '@element-plus/icons-vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { setDesktopUnderlay } from 'tauri-plugin-desktop-underlay-api'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
 
-const store = useWallpaperStore()
+const wallpaperStore = useWallpaperStore()
+const activeTab = ref('online')
 const selectedVideo = ref('')
+const onlineVideos = ref([])
+const pageNo = ref(1)
+const total = ref(0)
+const previewing = ref(null)
 let underlayWindow = null
 
-// 列表
-// https://go.ytab.top/users/video_wallpaper_list?page=1&limit=20
+const BASE_URL = 'https://oss.ytab.top/yy_video_wallpaper/'
 
-const onlineVideos = ref([
-  { id: 1, name: '动漫风景1', thumb: '🎬', url: 'https://oss.ytab.top/yy_video_wallpaper/02ed430b-b136-43e9-8539-0a2233749e9b.mp4' },
-  { id: 2, name: '动漫风景2', thumb: '🎬', url: 'https://example.com/video2.mp4' },
-])
+async function fetchOnlineVideos(page = 1) {
+  try {
+    const res = await fetch(`https://go.ytab.top/users/video_wallpaper_list?page=${page}&limit=16`)
+    const { data } = await res.json()
+    
+    onlineVideos.value = data.data.map(item => ({
+      id: item.id,
+      name: item.video,
+      image: BASE_URL + item.image,
+      videoUrl: BASE_URL + item.video,
+    }))
+    total.value = data.total || 0
+  } catch (e) {
+    console.error('获取在线视频失败:', e)
+  }
+}
+
+function handlePageChange(page) {
+  fetchOnlineVideos(page)
+}
+
+function previewVideo(video) {
+  previewing.value = video
+}
+
+async function applyVideoWallpaper(video) {
+  selectedVideo.value = video.videoUrl
+  previewing.value = null
+  await startVideoWallpaper()
+}
 
 async function selectVideo() {
   try {
@@ -83,10 +151,6 @@ async function selectVideo() {
   } catch (e) {
     console.error('选择视频失败:', e)
   }
-}
-
-function selectOnlineVideo(video) {
-  selectedVideo.value = video.url
 }
 
 async function startVideoWallpaper() {
@@ -120,13 +184,13 @@ async function startVideoWallpaper() {
     
     underlayWindow.on('tauri://close-requested', async () => {
       underlayWindow = null
-      store.setVideoActive(false)
+      wallpaperStore.setVideoActive(false)
       await invoke('refresh_wallpaper')
     })
     
-    store.setVideoActive(true)
-    store.setCurrentVideoPath(selectedVideo.value)
-    store.addToHistory({ path: selectedVideo.value, type: 'video' })
+    wallpaperStore.setVideoActive(true)
+    wallpaperStore.setCurrentVideoPath(selectedVideo.value)
+    wallpaperStore.addToHistory({ path: selectedVideo.value, type: 'video' })
   } catch (e) {
     console.error('启动失败:', e)
   }
@@ -139,37 +203,60 @@ async function stopVideoWallpaper() {
       await underlayWindow.close()
       underlayWindow = null
     }
-    store.setVideoActive(false)
+    wallpaperStore.setVideoActive(false)
     await invoke('refresh_wallpaper')
   } catch (e) {
     console.error('停止失败:', e)
   }
 }
+
+onMounted(() => {
+  fetchOnlineVideos()
+})
 </script>
 
 <style scoped>
-.section {
-  margin-bottom: 30px;
-}
-
-.section h3 {
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
 }
 
-.local-video button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cat-item {
+  padding: 5px 12px;
+  border-radius: 15px;
+  cursor: pointer;
+  background: var(--bg-color-secondary);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.cat-item:hover {
+  background: var(--hover-bg);
+}
+
+.cat-item.active {
   background: var(--primary-color);
   color: #fff;
-  cursor: pointer;
+}
+
+.local-section {
+  padding: 20px 0;
 }
 
 .selected-info {
-  margin-top: 10px;
-  padding: 10px;
+  margin-top: 15px;
+  padding: 12px;
   background: var(--bg-color-secondary);
   border-radius: 6px;
+  font-size: 14px;
 }
 
 .actions {
@@ -178,56 +265,87 @@ async function stopVideoWallpaper() {
   gap: 10px;
 }
 
-.start-btn, .stop-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.start-btn {
-  background: var(--primary-color);
-  color: #fff;
-}
-
-.start-btn:disabled {
-  opacity: 0.5;
-}
-
-.stop-btn {
-  background: #666;
-  color: #fff;
-}
-
-.stop-btn:disabled {
-  opacity: 0.5;
-}
-
-.online-videos {
+.video-grid {
+  height: calc(100vh - 214px);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(20%, 1fr));
+  gap: 12px;
+  min-height: 300px;
 }
 
 .video-item {
-  padding: 15px;
-  background: var(--bg-color-secondary);
+  position: relative;
+  height: 18vh;
   border-radius: 8px;
+  overflow: hidden;
   cursor: pointer;
-  text-align: center;
 }
 
-.video-item:hover {
-  background: var(--hover-bg);
+.video-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
 }
 
-.video-thumb {
+.video-item:hover img {
+  transform: scale(1.1);
+}
+
+.video-item .hover-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.video-item:hover .hover-actions {
+  opacity: 1;
+}
+
+.video-item .hover-actions .el-icon {
   font-size: 32px;
+  color: #fff;
 }
 
-.video-name {
-  margin-top: 8px;
-  font-size: 14px;
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 0 0;
+}
+
+.preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.preview-content video {
+  max-width: 90vw;
+  max-height: 80vh;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
 }
 
 .video-tip {

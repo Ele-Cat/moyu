@@ -18,7 +18,7 @@
         :key="wallpaper.id" 
         class="wallpaper-item"
       >
-        <img :src="wallpaper.url" :alt="wallpaper.name" @click="previewWallpaper(wallpaper)" />
+        <el-image class="wallpaper-image" :src="wallpaper.url" :alt="wallpaper.name" fit="cover" lazy @click="previewWallpaper(wallpaper)" />
         <div class="hover-title" :title="wallpaper.name">
           {{ wallpaper.name }}
         </div>
@@ -41,13 +41,13 @@
       />
     </div>
     
-    <div v-if="previewing" class="preview-modal" @click="previewing = null">
+    <div v-if="previewing" class="preview-modal">
       <div class="preview-content" @click.stop>
         <img :src="previewing.url" alt="" />
         <div class="preview-actions">
-          <button @click="applyStaticWallpaper(previewing)">设为壁纸</button>
-          <button @click="addToFavorites(previewing)">收藏</button>
-          <button @click="previewing = null">关闭</button>
+          <el-button type="primary" @click="applyStaticWallpaper(previewing)">设为壁纸</el-button>
+          <el-button @click="addToFavorites(previewing)">收藏</el-button>
+          <el-button @click="previewing = null">关闭</el-button>
         </div>
       </div>
     </div>
@@ -185,7 +185,7 @@ onMounted(async () => {
 }
 
 .wallpaper-grid {
-  height: calc(100vh - 260px);
+  height: calc(100vh - 250px);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(20%, 1fr));
   gap: 10px;
@@ -199,14 +199,14 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.wallpaper-item img {
+.wallpaper-item .wallpaper-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.2s;
 }
 
-.wallpaper-item:hover img {
+.wallpaper-item:hover .wallpaper-image {
   transform: scale(1.12);
 }
 
@@ -268,7 +268,7 @@ onMounted(async () => {
 .pagination-wrapper {
   display: flex;
   justify-content: flex-end;
-  padding: 20px 0 0;
+  padding: 15px 0 0;
 }
 
 .preview-modal {
@@ -285,13 +285,15 @@ onMounted(async () => {
 }
 
 .preview-content {
-  max-width: 90%;
-  max-height: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview-content img {
-  max-width: 100%;
-  max-height: 70vh;
+  max-width: 98%;
+  max-height: 88vh;
 }
 
 .preview-actions {
