@@ -5,6 +5,10 @@
   </div>
 </template>
 
+<script setup>
+defineOptions({ name: 'Game' })
+</script>
+
 <style scoped>
 .game-page {
   display: flex;

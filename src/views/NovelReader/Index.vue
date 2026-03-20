@@ -69,6 +69,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'NovelReader' })
 import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'

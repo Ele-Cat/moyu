@@ -181,8 +181,8 @@ use wallpaper::set_from_path;
 
 #[tauri::command]
 /// 设置桌面壁纸
-fn set_wallpaper(path: String) -> Result<String, String> {
-    set_from_path(&path).map_err(|e| format!("设置壁纸失败: {}", e))?;
+fn set_wallpaper(url: String) -> Result<String, String> {
+    set_from_path(&url).map_err(|e| format!("设置壁纸失败: {}", e))?;
     Ok("壁纸设置成功".to_string())
 }
 

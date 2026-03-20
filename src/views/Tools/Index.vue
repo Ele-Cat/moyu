@@ -80,6 +80,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'Tools' })
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager'

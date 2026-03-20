@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <el-config-provider :locale="locale" class="app-container">
     <FHeader v-if="!isVideoWallpaper" :isDark="isDark" />
 
     <div class="main-layout">
@@ -8,17 +8,20 @@
       <el-scrollbar class="content" :class="{ 'fullscreen': isVideoWallpaper }">
         <router-view v-slot="{ Component }">
           <transition name="fade-slide" mode="out-in">
-            <component :is="Component" />
+            <keep-alive :include="cachedViews">
+              <component style="overflow-x: hidden;" :is="Component" :key="route.path" />
+            </keep-alive>
           </transition>
         </router-view>
       </el-scrollbar>
     </div>
 
     <Settings v-model="appStore.showSettings" />
-  </div>
+  </el-config-provider>
 </template>
 
 <script setup>
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/modules/app'
@@ -27,11 +30,17 @@ import FHeader from '@/layouts/FHeader/Index.vue'
 import FSidebar from '@/layouts/FSidebar/Index.vue'
 import Settings from '@/components/Settings/Index.vue'
 
+const locale = computed(() => zhCn)
+
 const appStore = useAppStore()
 const route = useRoute()
 const { isDark, init: initDark } = useDark()
 
 const isVideoWallpaper = computed(() => route.path === '/video-wallpaper')
+
+const cachedViews = computed(() => {
+  return ['Home', 'NovelReader', 'MusicPlayer', 'NewsList', 'Wallpaper', 'Tools', 'Game']
+})
 
 onMounted(() => {
   initDark()
@@ -55,7 +64,6 @@ onMounted(() => {
 .content {
   flex: 1;
   height: calc(100vh - var(--header-height));
-  overflow-y: auto;
   overflow-x: hidden;
   background: var(--bg-color);
   transition: background-color 0.3s;

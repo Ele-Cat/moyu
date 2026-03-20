@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+defineOptions({ name: 'NewsList' })
 import { ref, computed, onMounted } from 'vue'
 import { get } from '@/hooks/useApi'
 import { openUrl } from '@tauri-apps/plugin-opener'
