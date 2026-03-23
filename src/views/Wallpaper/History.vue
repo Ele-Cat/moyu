@@ -10,6 +10,7 @@
       :total="wallpaperStore.history.length"
       :page-size="pageSize"
       :current-page="pageNo"
+      item-key="url"
       show-apply
       show-favorite
       show-delete

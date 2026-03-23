@@ -28,6 +28,8 @@
     "fs:default",
     "fs:allow-read",
     "fs:allow-exists",
+    "fs:allow-read-file",
+    "fs:allow-read-dir",
     "desktop-underlay:default",
     "core:webview:allow-create-webview-window"
   ]

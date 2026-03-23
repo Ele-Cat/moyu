@@ -9,6 +9,7 @@
       :items="showFavorites"
       :total="wallpaperStore.favorites.length"
       :current-page="pageNo"
+      item-key="url"
       show-apply
       show-favorite
       show-title

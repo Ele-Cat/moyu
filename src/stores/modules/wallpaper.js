@@ -17,6 +17,9 @@ export const useWallpaperStore = defineStore("wallpaper", {
   },
   actions: {
     addToHistory(item) {
+      if (!item.cover) {
+        return
+      }
       this.history = this.history.filter(h => h.url !== item.url)
       this.history.unshift({ ...item })
     },

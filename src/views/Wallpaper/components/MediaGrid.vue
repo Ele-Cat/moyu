@@ -10,10 +10,10 @@
         >
           <img :src="item.cover" :alt="item.name" />
           
-          <div v-if="['static', 'dynamic'].includes(type)" class="hover-title" :title="item.name">
+          <div v-if="['static'].includes(type)" class="hover-title" :title="item.name">
             {{ item.name }}
           </div>
-          <div v-else class="hover-title">
+          <div v-if="['favorite', 'history'].includes(type)" class="hover-title">
             {{ type === 'favorite' ? '收藏于：' : '使用于：'}}{{ formatTimestamp(item.timestamp) }}
           </div>
           
