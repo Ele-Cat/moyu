@@ -103,7 +103,6 @@ async function fetchWallpapers(categoryId, pageNo = 1) {
 async function switchCategory(cat) {
   currentCategory.value = cat.id
   pageNo.value = 1
-  console.log('pageNo.value: ', pageNo.value);
   await fetchWallpapers(cat.id, pageNo.value)
 }
 
