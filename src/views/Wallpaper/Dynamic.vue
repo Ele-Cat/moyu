@@ -56,7 +56,6 @@ const tabs = [
   { id: 'local', category: '本地视频' }
 ]
 const selectedVideo = ref('')
-const videoSrc = ref('')
 const videoResolution = ref('')
 const onlineVideos = ref([])
 const pageNo = ref(1)
