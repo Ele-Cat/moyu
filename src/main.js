@@ -6,11 +6,13 @@ import "element-plus/theme-chalk/dark/css-vars.css";
 import App from "./App.vue";
 import router from "./router";
 import "./assets/styles/variables.css";
+import components from "./components/index.js";
 
 const app = createApp(App);
 
 app.use(pinia);
 app.use(router);
 app.use(ElementPlus);
+app.use(components);
 
 app.mount("#app");

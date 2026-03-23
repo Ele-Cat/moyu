@@ -15,41 +15,23 @@
           本地视频
         </div>
       </div>
-      <el-button 
-        v-if="wallpaperStore.videoActive"
-        type="danger" 
-        size="small"
-        @click="stopVideoWallpaper"
-      >
-        停止壁纸
-      </el-button>
     </div>
     
     <template v-if="activeTab === 'online'">
-      <el-scrollbar>
-        <div class="video-grid">
-          <div 
-            v-for="video in onlineVideos" 
-            :key="video.id"
-            class="video-item"
-            @click="previewVideo(video)"
-          >
-            <img :src="video.image" :alt="video.name" />
-            <div class="hover-actions">
-              <el-icon title="预览"><VideoPlay /></el-icon>
-            </div>
-          </div>
-        </div>
-      </el-scrollbar>
-      <div class="pagination-wrapper" v-if="total > 0">
-        <el-pagination
-          v-model:current-page="pageNo"
-          :page-size="20"
-          :total="total"
-          layout="total, prev, pager, next"
-          @current-change="handlePageChange"
-        />
-      </div>
+      <MediaGrid
+        type="dynamic"
+        :items="onlineVideos"
+        height="calc(100vh - 214px)"
+        item-key="id"
+        show-apply
+        show-favorite
+        :total="total"
+        :current-page="pageNo"
+        @apply="handleApplyVideo"
+        @favorite="item => emit('favorite', item)"
+        @page-change="handlePageChange"
+      >
+      </MediaGrid>
     </template>
     
     <div v-if="activeTab === 'local'" class="local-section">
@@ -58,40 +40,27 @@
         <span>已选择: {{ selectedVideo }}</span>
       </div>
       
-      <div class="actions" v-if="selectedVideo && !wallpaperStore.videoActive">
+      <div class="actions" v-if="selectedVideo">
         <el-button 
           type="primary" 
-          @click="startVideoWallpaper"
+          @click="handleApplyVideo"
         >
           启动视频壁纸
         </el-button>
       </div>
     </div>
     
-    <div v-if="previewing" class="preview-modal" @click="previewing = null">
-      <div class="preview-content" @click.stop>
-        <video :src="previewing.videoUrl" controls autoplay muted></video>
-        <div class="preview-actions">
-          <el-button type="primary" @click="applyVideoWallpaper(previewing)">设为壁纸</el-button>
-          <el-button @click="previewing = null">关闭</el-button>
-        </div>
-      </div>
-    </div>
-    
-    <div v-if="wallpaperStore.videoActive" class="video-tip">
+    <!-- <div v-if="wallpaperStore.videoActive" class="video-tip">
       视频壁纸已启动
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { VideoPlay } from '@element-plus/icons-vue'
-import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { setDesktopUnderlay } from 'tauri-plugin-desktop-underlay-api'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
+import MediaGrid from './components/MediaGrid.vue'
 
 const wallpaperStore = useWallpaperStore()
 const activeTab = ref('online')
@@ -99,10 +68,14 @@ const selectedVideo = ref('')
 const onlineVideos = ref([])
 const pageNo = ref(1)
 const total = ref(0)
-const previewing = ref(null)
-let underlayWindow = null
+
+const emit = defineEmits(['apply', 'favorite'])
 
 const BASE_URL = 'https://oss.ytab.top/yy_video_wallpaper/'
+
+onMounted(async () => {
+  fetchOnlineVideos()
+})
 
 async function fetchOnlineVideos(page = 1) {
   try {
@@ -112,8 +85,9 @@ async function fetchOnlineVideos(page = 1) {
     onlineVideos.value = data.data.map(item => ({
       id: item.id,
       name: item.video,
-      image: BASE_URL + item.image,
-      videoUrl: BASE_URL + item.video,
+      type: 'video',
+      cover: BASE_URL + item.image,
+      url: BASE_URL + item.video,
     }))
     total.value = data.total || 0
   } catch (e) {
@@ -125,14 +99,9 @@ function handlePageChange(page) {
   fetchOnlineVideos(page)
 }
 
-function previewVideo(video) {
-  previewing.value = video
-}
-
-async function applyVideoWallpaper(video) {
-  selectedVideo.value = video.videoUrl
-  previewing.value = null
-  await startVideoWallpaper()
+async function handleApplyVideo(video) {
+  selectedVideo.value = video.url
+  emit('apply', video)
 }
 
 async function selectVideo() {
@@ -146,79 +115,13 @@ async function selectVideo() {
       }]
     })
     if (selected) {
+      console.log('selected: ', selected);
       selectedVideo.value = selected
     }
   } catch (e) {
     console.error('选择视频失败:', e)
   }
 }
-
-async function startVideoWallpaper() {
-  if (!selectedVideo.value) return
-  
-  try {
-    if (underlayWindow) {
-      await setDesktopUnderlay(false, 'underlay')
-      await underlayWindow.close()
-    }
-    
-    underlayWindow = new WebviewWindow('underlay', {
-      url: `/video-wallpaper?path=${encodeURIComponent(selectedVideo.value)}`,
-      title: 'VideoWallpaper',
-      width: 1920,
-      height: 1080,
-      x: 0,
-      y: 0,
-      resizable: false,
-      transparent: true,
-      visible: true,
-      decorations: false,
-      alwaysOnBottom: true,
-      skipTaskbar: true,
-      fullscreen: true,
-    })
-    
-    underlayWindow.once('tauri://created', async () => {
-      await setDesktopUnderlay(true, 'underlay')
-    })
-    
-    // underlayWindow.on('tauri://close-requested', async () => {
-    //   underlayWindow = null
-    //   wallpaperStore.setVideoActive(false)
-    //   await invoke('refresh_wallpaper')
-    // })
-    
-    wallpaperStore.setVideoActive(true)
-    wallpaperStore.setCurrentVideoPath(selectedVideo.value)
-    wallpaperStore.addToHistory({ path: selectedVideo.value, type: 'video' })
-  } catch (e) {
-    console.error('启动失败:', e)
-  }
-}
-
-async function stopVideoWallpaper() {
-  try {
-    if (underlayWindow) {
-      await setDesktopUnderlay(false, 'underlay')
-      await underlayWindow.close()
-      underlayWindow = null
-    }
-    wallpaperStore.setVideoActive(false)
-    await invoke('refresh_wallpaper')
-  } catch (e) {
-    console.error('停止失败:', e)
-  }
-}
-
-onMounted(async () => {
-  if (wallpaperStore.videoActive) {
-    const existingWindow = await WebviewWindow.getByLabel('underlay')
-    if (existingWindow) {
-      underlayWindow = existingWindow
-    }
-  }
-  fetchOnlineVideos()
-})
 </script>
 
 <style scoped>

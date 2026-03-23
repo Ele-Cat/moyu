@@ -17,20 +17,12 @@ export const useWallpaperStore = defineStore("wallpaper", {
   },
   actions: {
     addToHistory(item) {
-      const exists = this.history.find(h => h.path === item.path);
-      if (!exists) {
-        this.history.unshift({
-          ...item,
-          timestamp: Date.now()
-        });
-        if (this.history.length > 50) {
-          this.history.pop();
-        }
-      }
+      this.history = this.history.filter(h => h.url !== item.url)
+      this.history.unshift({ ...item })
     },
     
-    removeFromHistory(path) {
-      this.history = this.history.filter(h => h.path !== path);
+    removeFromHistory(url) {
+      this.history = this.history.filter(h => h.url !== url);
     },
     
     clearHistory() {
@@ -38,30 +30,28 @@ export const useWallpaperStore = defineStore("wallpaper", {
     },
     
     addToFavorites(item) {
-      const exists = this.favorites.find(f => f.path === item.path);
-      if (!exists) {
-        this.favorites.unshift({
-          ...item,
-          timestamp: Date.now()
-        });
-      }
+      this.favorites = this.favorites.filter(h => h.url !== item.url)
+      this.favorites.unshift({ ...item })
     },
     
-    removeFromFavorites(path) {
-      this.favorites = this.favorites.filter(f => f.path !== path);
+    removeFromFavorites(url) {
+      this.favorites = this.favorites.filter(f => f.url !== url);
     },
     
-    isFavorite(path) {
-      return this.favorites.some(f => f.path === path);
+    isFavorited(item) {
+      return this.favorites.some(f => f.url === item.url);
+    },
+    
+    clearFavorite() {
+      this.favorites = [];
     },
     
     setVideoActive(active) {
-      console.log('active: ', active);
       this.videoActive = active;
     },
     
-    setCurrentVideoPath(path) {
-      this.currentVideoPath = path;
+    setCurrentVideoPath(url) {
+      this.currentVideoPath = url;
     },
   },
   persist: {

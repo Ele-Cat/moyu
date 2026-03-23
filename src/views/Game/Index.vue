@@ -1,20 +1,16 @@
 <template>
   <div class="game-page">
-    <h2>🎮 小游戏</h2>
-    <p>功能开发中...</p>
+    <MazeGame />
   </div>
 </template>
 
 <script setup>
 defineOptions({ name: 'Game' })
+import MazeGame from './modules/MazeGame.vue'
 </script>
 
 <style scoped>
 .game-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   height: 100%;
   background: var(--bg-color);
 }

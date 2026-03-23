@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-config-provider :locale="locale">
+    <el-config-provider :locale="locale" :message="messageConfig">
       <FHeader v-if="!isVideoWallpaper" :isDark="isDark" />
 
       <div class="main-layout">
@@ -24,7 +24,7 @@
 
 <script setup>
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import { computed, onMounted } from 'vue'
+import { computed, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/modules/app'
 import { useDark } from '@/hooks/useDark'
@@ -33,6 +33,10 @@ import FSidebar from '@/layouts/FSidebar/Index.vue'
 import Settings from '@/components/Settings/Index.vue'
 
 const locale = computed(() => zhCn)
+const messageConfig = reactive({
+  max: 3,
+  offset: 60,
+})
 
 const appStore = useAppStore()
 const route = useRoute()
