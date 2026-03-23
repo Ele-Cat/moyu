@@ -1,47 +1,99 @@
-# Demo Tauri 应用
+# 摸鱼日常
 
-基于 Tauri + Vue 3 + TypeScript 的桌面应用程序。
-
-- [创建项目](https://tauri.app/zh-cn/start/create-project/)
-
+一款跨平台桌面摸鱼小工具，帮助用户在上班/学习间隙放松身心，同时避免被发现。
 
 ## 技术栈
 
 | 类别 | 技术 |
 |------|------|
-| 前端框架 | Vue 3.5 + TypeScript 5.6 |
-| 构建工具 | Vite 6 |
-| 桌面框架 | Tauri 2 |
+| 框架 | Tauri 2.x |
+| 前端 | Vue 3 + TypeScript + Vite |
+| 状态管理 | Pinia |
 | 路由 | Vue Router 5 |
-| 包管理 | pnpm |
+| 后端 | Rust |
+| 样式 | CSS Variables (支持暗黑模式) |
 
 ## 项目结构
 
 ```
 ├── src/                      # 前端源码
 │   ├── router/               # 路由配置
-│   │   └── index.js
 │   ├── views/                # 页面组件
-│   │   └── Home.vue
-│   ├── assets/               # 静态资源
-│   ├── App.vue               # 根组件
-│   ├── main.js               # 入口文件
+│   │   ├── Home/           # 首页
+│   │   ├── NovelReader/    # 小说阅读
+│   │   ├── MusicPlayer/    # 音乐播放
+│   │   ├── NewsList/       # 热点新闻
+│   │   ├── Wallpaper/      # 壁纸设置
+│   │   ├── Tools/          # 实用工具
+│   │   └── Game/           # 小游戏
+│   ├── components/          # 公共组件
+│   ├── stores/             # Pinia 状态管理
+│   ├── assets/             # 静态资源
+│   ├── App.vue             # 根组件
+│   └── main.js             # 入口文件
 │
-├── src-tauri/                # Rust 后端
+├── src-tauri/               # Rust 后端
 │   ├── src/
-│   │   ├── lib.rs            # 托盘/命令逻辑
-│   │   └── main.rs           # Rust 入口
-│   ├── capabilities/          # 权限配置
-│   ├── icons/                # 应用图标
-│   ├── Cargo.toml            # Rust 依赖
-│   └── tauri.conf.json       # Tauri 配置
+│   │   ├── lib.rs          # 托盘/命令逻辑
+│   │   └── main.rs         # Rust 入口
+│   ├── capabilities/        # 权限配置
+│   ├── icons/              # 应用图标
+│   ├── Cargo.toml          # Rust 依赖
+│   └── tauri.conf.json     # Tauri 配置
 │
 ├── public/                   # 公共资源
-├── index.html                # HTML 入口
-├── vite.config.js            # Vite 配置
-├── tsconfig.json             # TypeScript 配置
-└── package.json               # Node 依赖
+├── index.html               # HTML 入口
+├── vite.config.js           # Vite 配置
+└── package.json             # Node 依赖
 ```
+
+## 功能特性
+
+### 基础功能
+- [x] 自定义窗口标题（伪装标题）
+- [x] 窗口透明度调节
+- [x] 老板键（Ctrl+~ 快速隐藏）
+- [x] 系统托盘（隐藏到托盘）
+- [x] 暗黑模式切换
+- [x] 侧边栏折叠与状态缓存
+
+### 小说阅读
+- [x] 扫描本地 txt 文件
+- [x] 阅读器界面（翻页、进度记忆）
+- [x] 广告过滤
+
+### 音乐播放
+- [x] 扫描本地音乐文件
+- [x] 播放/暂停/上一首/下一首
+- [x] 进度条拖动
+- [x] 音量控制
+
+### 热点新闻
+- [x] 知乎热榜数据
+- [x] 标题+热度展示
+- [x] 外部链接打开
+
+### 壁纸设置
+- [x] 静态壁纸（必应壁纸）
+- [x] 动态壁纸（在线视频）
+- [x] 本地视频设为壁纸
+- [x] 壁纸历史记录
+- [x] 壁纸收藏功能
+
+### 实用工具
+- [x] 倒计时器（番茄钟）
+- [x] 剪贴板监控（敏感词过滤）
+
+### 小游戏
+- [x] 迷宫游戏（三种难度）
+
+## UI/UX
+
+- [x] 左侧侧边栏导航
+- [x] 顶部自定义标题栏（无边框窗口）
+- [x] 页面切换过渡动画
+- [x] 响应式布局
+- [x] 暗黑/亮色主题
 
 ## 环境要求
 
@@ -58,24 +110,16 @@ pnpm install
 ## 开发运行
 
 ```bash
-# 启动开发服务器
 pnpm tauri dev
 ```
 
 ## 构建发布
 
 ```bash
-# 构建生产版本
 pnpm tauri build
 ```
 
 构建产物位于 `src-tauri/target/release/` 目录。
-
-## 功能特性
-
-- 系统托盘（右键菜单：显示窗口、退出）
-- 窗口管理（最小化、最大化、关闭）
-- 页面路由
 
 ## 常用命令
 
@@ -85,4 +129,36 @@ pnpm tauri build
 | `pnpm tauri dev` | 启动 Tauri 开发模式 |
 | `pnpm build` | 构建前端资源 |
 | `pnpm tauri build` | 构建桌面应用 |
-| `pnpm tauri build --debug` | Debug 模式构建 |
+
+## 后续迭代
+
+### Phase 2
+- [ ] 小说阅读器优化（字体大小、背景色、夜间模式）
+- [ ] 音乐播放列表管理
+- [ ] 新闻分类筛选
+- [ ] 快捷键自定义
+
+### Phase 3
+- [ ] 小说源接入（在线阅读）
+- [ ] 音乐搜索
+- [ ] 定时提醒
+- [ ] 数据同步
+
+### Phase 4
+- [ ] 插件系统
+- [ ] 主题商店
+- [ ] 多语言支持
+
+## 性能目标
+
+- 首屏加载 < 1s
+- 内存占用 < 150MB
+- 包体积 < 30MB
+
+## 版本规划
+
+| 版本 | 里程碑 |
+|------|--------|
+| 0.1.0 | 基础功能上线 |
+| 0.2.0 | 阅读/播放优化 |
+| 1.0.0 | 正式发布版 |
