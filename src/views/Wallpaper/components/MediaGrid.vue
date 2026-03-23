@@ -8,7 +8,7 @@
           class="media-item"
           @click="handleClick(item)"
         >
-          <img :src="item.cover" :alt="item.name" />
+          <el-image class="media-image" :src="item.cover" :alt="item.name" lazy />
           
           <div v-if="['static'].includes(type)" class="hover-title" :title="item.name">
             {{ item.name }}
@@ -165,7 +165,13 @@ function isFavorited(item) {
 }
 
 watch(() => props.currentPage, (val) => {
-  currentPage.value = val
+  if (val !== currentPage.value) {
+    currentPage.value = val
+  }
+})
+
+watch(() => props.total, () => {
+  currentPage.value = 1
 })
 
 function handleClick(item) {
@@ -177,8 +183,8 @@ function closePreview() {
   previewing.value = null
 }
 
-function handlePageChange(page) {
-  emit('page-change', page)
+function handlePageChange(pageNo) {
+  emit('page-change', pageNo)
 }
 </script>
 
@@ -202,16 +208,14 @@ function handlePageChange(page) {
   cursor: pointer;
 }
 
-.media-item img,
-.media-item video {
+.media-item .media-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.2s;
 }
 
-.media-item:hover img,
-.media-item:hover video {
+.media-item:hover .media-image {
   transform: scale(1.1);
 }
 

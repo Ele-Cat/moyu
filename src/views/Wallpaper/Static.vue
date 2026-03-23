@@ -55,7 +55,7 @@ async function fetchCategories() {
   }
 }
 
-async function fetchWallpapers(categoryId, page = 1) {
+async function fetchWallpapers(categoryId, pageNo = 1) {
   loading.value = true
   const loadingInstance = ElLoading.service({
     lock: true,
@@ -65,9 +65,9 @@ async function fetchWallpapers(categoryId, page = 1) {
   try {
     let url = ''
     if (categoryId === 'biying') {
-      url = `https://go.ytab.top/api/biying_wallpaper_list?page=${page}&limit=40`
+      url = `https://go.ytab.top/api/biying_wallpaper_list?page=${pageNo}&limit=40`
     } else {
-      url = `https://go.ytab.top/api/wallpaper_list?cid=${categoryId}&page=${page}&limit=16`
+      url = `https://go.ytab.top/api/wallpaper_list?cid=${categoryId}&page=${pageNo}&limit=16`
     }
     const res = await fetch(url)
     const {data} = await res.json()
@@ -103,11 +103,12 @@ async function fetchWallpapers(categoryId, page = 1) {
 async function switchCategory(cat) {
   currentCategory.value = cat.id
   pageNo.value = 1
-  await fetchWallpapers(cat.id, 1)
+  console.log('pageNo.value: ', pageNo.value);
+  await fetchWallpapers(cat.id, pageNo.value)
 }
 
-function handlePageChange(page) {
-  fetchWallpapers(currentCategory.value, page)
+function handlePageChange(pageNo) {
+  fetchWallpapers(currentCategory.value, pageNo)
 }
 </script>
 
