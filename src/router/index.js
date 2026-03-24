@@ -47,7 +47,15 @@ const router = createRouter({
       path: '/game',
       name: 'game',
       component: () => import('../views/Game/Index.vue'),
-      meta: { title: '游戏' }
+      meta: { title: '游戏' },
+      children: [
+        {
+          path: 'maze',
+          name: 'maze-game',
+          component: () => import('../views/Game/modules/MazeGame.vue'),
+          meta: { title: '迷宫小游戏' }
+        }
+      ]
     },
     {
       path: '/tools',

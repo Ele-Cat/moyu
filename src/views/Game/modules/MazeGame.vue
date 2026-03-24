@@ -1,7 +1,24 @@
 <template>
   <div class="maze-game">
-    <div class="game-header">
-      <h3>迷宫小游戏</h3>
+    <div class="game-nav">
+      <el-button 
+        type="primary" 
+        :icon="ArrowLeft" 
+        circle 
+        size="small"
+        @click="goBack"
+      />
+      <div class="game-title">迷宫小游戏</div>
+      <el-button 
+        type="info" 
+        :icon="QuestionFilled" 
+        circle 
+        size="small"
+        @click="showHelp = true"
+      />
+    </div>
+    
+    <div class="game-content">
       <div class="difficulty-selector">
         <el-button 
           v-for="diff in difficulties" 
@@ -13,62 +30,68 @@
           {{ diff.label }}
         </el-button>
       </div>
-    </div>
-    
-    <div class="game-info">
-      <div class="timer">
-        <span>用时: {{ formatTime(elapsedTime) }}</span>
-      </div>
-      <div class="best-time" v-if="bestTime">
-        <span>最快记录: {{ formatTime(bestTime) }}</span>
-      </div>
-    </div>
-    
-    <div 
-      class="maze-container" 
-      tabindex="0" 
-      @keydown="handleKeydown"
-      ref="mazeContainer"
-    >
-      <div 
-        class="maze"
-        :style="{
-          gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-          gridTemplateRows: `repeat(${gridSize}, 1fr)`
-        }"
-      >
-        <div 
-          v-for="(cell, index) in maze" 
-          :key="index"
-          :class="[
-            'cell',
-            {
-              'wall': cell === 1,
-              'path': cell === 0,
-              'player': isPlayer(index),
-              'start': index === startPos,
-              'end': index === endPos
-            }
-          ]"
-        >
-          <span v-if="isPlayer(index)" class="player-icon">🧙</span>
-          <span v-if="index === startPos" class="flag">🏁</span>
-          <span v-if="index === endPos" class="flag">🚩</span>
+      
+      <div class="game-info">
+        <div class="timer">
+          <span>用时: {{ formatTime(elapsedTime) }}</span>
+        </div>
+        <div class="best-time" v-if="bestTime">
+          <span>最快记录: {{ formatTime(bestTime) }}</span>
         </div>
       </div>
-    </div>
-    
-    <div class="game-controls">
-      <el-button @click="startGame(currentDifficulty)">重新开始</el-button>
-      <el-button @click="showHelp = true">操作说明</el-button>
+      
+      <div 
+        class="maze-container" 
+        tabindex="0" 
+        @keydown="handleKeydown"
+        ref="mazeContainer"
+      >
+        <div class="maze-instructions">
+          请使用键盘上的 ←↑→↓ 键或 WASD 进行游戏
+        </div>
+        <div class="maze-wrapper">
+          <div 
+            class="maze"
+            :style="{
+              width: `${mazeSize}px`,
+              height: `${mazeSize}px`,
+              gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+              gridTemplateRows: `repeat(${gridSize}, 1fr)`
+            }"
+          >
+            <div 
+              v-for="(cell, index) in mazeCells"
+              :key="index"
+              class="cell"
+              :class="{
+                'wall': cell === 1,
+                'path': cell === 0,
+                'start': index === startIndex,
+                'end': index === endIndex,
+                'player': index === playerIndex,
+                'visited': visitedCells.includes(index)
+              }"
+            >
+              <div v-if="index === playerIndex" class="player">🧙</div>
+              <div v-if="index === startIndex" class="start-text">start</div>
+              <div v-if="index === endIndex" class="end-text">end</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="game-controls">
+        <el-button @click="startGame(currentDifficulty)">重新开始</el-button>
+      </div>
     </div>
     
     <el-dialog v-model="showHelp" title="操作说明" width="400px">
       <div class="help-content">
         <p>使用 <b>方向键</b> 或 <b>WASD</b> 控制角色移动</p>
-        <p>🏁 起点 - 角色位置</p>
-        <p>🚩 终点 - 到达终点即通关</p>
+        <p>🏁 起点 - 角色位置（左上角）</p>
+        <p>🚩 终点 - 到达终点即通关（右下角）</p>
         <p>🧱 墙壁 - 无法穿越</p>
+        <p>🟡 黄色 - 已走过的路径</p>
       </div>
     </el-dialog>
     
@@ -88,22 +111,27 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import { useGameStore } from '@/stores/modules/game'
 
+const router = useRouter()
 const gameStore = useGameStore()
 
 const difficulties = [
-  { value: 'easy', label: '简单', size: 9 },
-  { value: 'medium', label: '中等', size: 13 },
-  { value: 'hard', label: '困难', size: 17 }
+  { value: 'easy', label: '简单', size: 10 },
+  { value: 'medium', label: '中等', size: 15 },
+  { value: 'hard', label: '困难', size: 20 }
 ]
 
 const currentDifficulty = ref('easy')
-const gridSize = ref(9)
-const maze = ref([])
-const playerPos = ref(0)
-const startPos = ref(0)
-const endPos = ref(0)
+const gridSize = ref(10)
+const mazeSize = ref(400)
+const mazeCells = ref([])
+const visitedCells = ref([])
+const playerIndex = ref(0)
+const startIndex = ref(0)
+const endIndex = ref(0)
 const elapsedTime = ref(0)
 const timer = ref(null)
 const isPlaying = ref(false)
@@ -116,55 +144,92 @@ const bestTime = computed(() => {
   return gameStore.getMazeRecord(currentDifficulty.value)
 })
 
-function getGridSize(difficulty) {
-  const diff = difficulties.find(d => d.value === difficulty)
-  return diff ? diff.size : 9
+function goBack() {
+  router.push('/game')
 }
 
+function getGridSize(difficulty) {
+  const diff = difficulties.find(d => d.value === difficulty)
+  return diff ? diff.size : 10
+}
+
+// 生成迷宫 - 深度优先搜索算法
 function generateMaze(size) {
-  const total = size * size
-  const maze = new Array(total).fill(1)
+  const maze = Array(size * size).fill(1)
+  const stack = []
   
-  function carve(x, y) {
-    const idx = y * size + x
-    maze[idx] = 0
+  // 起点
+  const start = 0
+  maze[start] = 0
+  stack.push(start)
+  
+  while (stack.length > 0) {
+    const current = stack[stack.length - 1]
+    const neighbors = getUnvisitedNeighbors(current, size, maze)
     
-    const directions = [
-      [0, -2], [0, 2], [-2, 0], [2, 0]
-    ].sort(() => Math.random() - 0.5)
-    
-    for (const [dx, dy] of directions) {
-      const nx = x + dx
-      const ny = y + dy
-      
-      if (nx > 0 && nx < size - 1 && ny > 0 && ny < size - 1 && maze[ny * size + nx] === 1) {
-        const midX = x + dx / 2
-        const midY = y + dy / 2
-        maze[midY * size + midX] = 0
-        carve(nx, ny)
-      }
+    if (neighbors.length > 0) {
+      const next = neighbors[Math.floor(Math.random() * neighbors.length)]
+      const wall = Math.floor((current + next) / 2)
+      maze[wall] = 0
+      maze[next] = 0
+      stack.push(next)
+    } else {
+      stack.pop()
     }
   }
   
-  carve(1, 1)
+  // 确保终点是路径
+  const end = size * size - 1
+  maze[end] = 0
   
-  const endX = size - 2
-  const endY = size - 2
-  maze[endY * size + endX] = 0
+  // 确保终点周围有路径
+  const endX = end % size
+  const endY = Math.floor(end / size)
+  
+  if (endX > 0) maze[end - 1] = 0
+  if (endY > 0) maze[end - size] = 0
   
   return maze
+}
+
+function getUnvisitedNeighbors(index, size, maze) {
+  const neighbors = []
+  const x = index % size
+  const y = Math.floor(index / size)
+  
+  // 上
+  if (y > 1 && maze[index - size * 2] === 1) {
+    neighbors.push(index - size * 2)
+  }
+  // 下
+  if (y < size - 2 && maze[index + size * 2] === 1) {
+    neighbors.push(index + size * 2)
+  }
+  // 左
+  if (x > 1 && maze[index - 2] === 1) {
+    neighbors.push(index - 2)
+  }
+  // 右
+  if (x < size - 2 && maze[index + 2] === 1) {
+    neighbors.push(index + 2)
+  }
+  
+  return neighbors
 }
 
 function startGame(difficulty) {
   currentDifficulty.value = difficulty
   gridSize.value = getGridSize(difficulty)
   
-  maze.value = generateMaze(gridSize.value)
+  // 生成迷宫
+  mazeCells.value = generateMaze(gridSize.value)
   
-  startPos.value = 1 * gridSize.value + 1
-  endPos.value = (gridSize.value - 2) * gridSize.value + (gridSize.value - 2)
+  // 起点和终点
+  startIndex.value = 0
+  endIndex.value = gridSize.value * gridSize.value - 1
   
-  playerPos.value = startPos.value
+  playerIndex.value = startIndex.value
+  visitedCells.value = [startIndex.value]
   
   elapsedTime.value = 0
   isPlaying.value = true
@@ -181,37 +246,30 @@ function startGame(difficulty) {
   }, 100)
 }
 
-function isPlayer(index) {
-  return playerPos.value === index
-}
-
 function canMove(index) {
-  return maze.value[index] === 0
+  return index >= 0 && index < gridSize.value * gridSize.value && mazeCells.value[index] === 0
 }
 
 function movePlayer(direction) {
   if (!isPlaying.value) return
   
-  const size = gridSize.value
-  const current = playerPos.value
-  const x = current % size
-  const y = Math.floor(current / size)
+  const current = playerIndex.value
+  let newIndex = current
   
-  let newX = x
-  let newY = y
+  if (direction === 'up') newIndex = current - gridSize.value
+  else if (direction === 'down') newIndex = current + gridSize.value
+  else if (direction === 'left') newIndex = current - 1
+  else if (direction === 'right') newIndex = current + 1
   
-  if (direction === 'up') newY--
-  else if (direction === 'down') newY++
-  else if (direction === 'left') newX--
-  else if (direction === 'right') newX++
-  
-  if (newX < 0 || newX >= size || newY < 0 || newY >= size) return
-  
-  const newIdx = newY * size + newX
-  if (canMove(newIdx)) {
-    playerPos.value = newIdx
+  if (canMove(newIndex)) {
+    playerIndex.value = newIndex
     
-    if (newIdx === endPos.value) {
+    // 添加到已访问路径
+    if (!visitedCells.value.includes(newIndex)) {
+      visitedCells.value.push(newIndex)
+    }
+    
+    if (newIndex === endIndex.value) {
       winGame()
     }
   }
@@ -272,23 +330,39 @@ onUnmounted(() => {
 .maze-game {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  background: var(--bg-color);
+}
+
+.game-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-color-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.game-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.game-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   padding: 20px;
-}
-
-.game-header {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.game-header h3 {
-  margin-bottom: 15px;
+  overflow: auto;
 }
 
 .difficulty-selector {
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin-bottom: 15px;
 }
 
 .game-info {
@@ -309,53 +383,109 @@ onUnmounted(() => {
 
 .maze-container {
   outline: none;
-  padding: 10px;
+  padding: 20px;
   background: var(--bg-color-secondary);
-  border-radius: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.maze-instructions {
+  font-size: 14px;
+  color: var(--text-color-muted);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.maze-wrapper {
+  border: 2px solid #000;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .maze {
   display: grid;
-  gap: 1px;
-  background: #333;
+  gap: 0;
+  background: #000;
 }
 
 .cell {
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  height: 0;
+  padding-bottom: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 12px;
   position: relative;
+  border: none !important;
+  outline: none !important;
+}
+
+.cell > div {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cell.wall {
-  background: #444;
+  background: #000;
 }
 
 .cell.path {
-  background: #f5f5f5;
+  background: #fff;
+}
+
+.cell.start {
+  background: #fff;
+  position: relative;
+}
+
+.cell.end {
+  background: #fff;
+  position: relative;
 }
 
 .cell.player {
   background: #e3f2fd;
+  animation: pulse 1s infinite;
 }
 
-.cell.start {
-  background: #c8e6c9;
+.cell.visited {
+  background: #fff3cd;
 }
 
-.cell.end {
-  background: #ffcdd2;
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
-.player-icon {
-  font-size: 20px;
-}
-
-.flag {
+.player {
   font-size: 16px;
+  z-index: 10;
+}
+
+.start-text {
+  color: red;
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.end-text {
+  color: green;
+  font-weight: bold;
+  font-size: 10px;
 }
 
 .game-controls {

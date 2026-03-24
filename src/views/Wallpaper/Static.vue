@@ -9,6 +9,7 @@
     <MediaGrid
       type="static"
       :items="wallpapers"
+      :loading="loading"
       height="calc(100vh - 250px)"
       item-key="id"
       show-title
@@ -25,7 +26,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElLoading } from 'element-plus'
 import MediaGrid from './components/MediaGrid.vue'
 
 const loading = ref(false)
@@ -57,11 +57,6 @@ async function fetchCategories() {
 
 async function fetchWallpapers(categoryId, pageNo = 1) {
   loading.value = true
-  const loadingInstance = ElLoading.service({
-    lock: true,
-    text: '加载中...',
-    background: 'rgba(0, 0, 0, 0.7)'
-  })
   try {
     let url = ''
     if (categoryId === 'biying') {
@@ -96,7 +91,6 @@ async function fetchWallpapers(categoryId, pageNo = 1) {
     wallpapers.value = []
   } finally {
     loading.value = false
-    loadingInstance.close()
   }
 }
 
@@ -112,4 +106,5 @@ function handlePageChange(pageNo) {
 </script>
 
 <style scoped>
+
 </style>

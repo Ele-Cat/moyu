@@ -1,6 +1,15 @@
 <template>
   <div class="media-grid-container">
-    <el-scrollbar v-if="items.length > 0">
+    <div v-if="loading" class="skeleton-container" :style="{ height: height }">
+      <el-skeleton animated>
+        <template #template>
+          <div class="skeleton-grid">
+            <el-skeleton-item v-for="i in 16" :key="i" variant="image" class="skeleton-item" />
+          </div>
+        </template>
+      </el-skeleton>
+    </div>
+    <el-scrollbar v-if="items.length > 0 && !loading">
       <div class="media-grid" :style="{height: height}">
         <div 
           v-for="item in items" 
@@ -8,7 +17,11 @@
           class="media-item"
           @click="handleClick(item)"
         >
-          <el-image class="media-image" :src="item.cover" :alt="item.name" lazy />
+          <el-image class="media-image" :src="item.cover" :alt="item.name" lazy>
+            <template #placeholder>
+              <div class="image-slot">加载中<span class="dot">...</span></div>
+            </template>
+          </el-image>
           
           <div v-if="['static'].includes(type)" class="hover-title" :title="item.name">
             {{ item.name }}
@@ -52,7 +65,7 @@
       </div>
     </el-scrollbar>
     
-    <div v-else class="empty-tip">
+    <div v-if="items.length == 0 && !loading" class="empty-tip">
       {{ emptyText }}
     </div>
     
@@ -94,6 +107,10 @@ const props = defineProps({
   items: {
     type: Array,
     default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
   },
   type: {
     type: String,
@@ -193,6 +210,22 @@ function handlePageChange(pageNo) {
   width: 100%;
 }
 
+.skeleton-container {
+  overflow: auto;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.skeleton-item {
+  display: flex;
+  flex-direction: column;
+  height: 14vh;
+}
+
 .media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(20%, 1fr));
@@ -213,6 +246,15 @@ function handlePageChange(pageNo) {
   height: 100%;
   object-fit: cover;
   transition: transform 0.2s;
+}
+
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 12px;
 }
 
 .media-item:hover .media-image {

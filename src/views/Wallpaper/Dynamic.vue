@@ -10,6 +10,7 @@
       <MediaGrid
         type="dynamic"
         :items="onlineVideos"
+        :loading="loading"
         height="calc(100vh - 214px)"
         item-key="id"
         show-apply
@@ -26,7 +27,7 @@
     <template v-if="activeTab === 'local'">
       <el-button type="primary" @click="selectVideo">选择本地视频</el-button>
       <el-button v-if="selectedVideo" type="danger" @click="removeSelectedVideo">移除本地视频</el-button>
-      <p class="tip">提示：推荐选择适合自己屏幕分辨率的视频如：1920*1080，否则可能会导致壁纸显示异常。</p>
+      <p class="tip">提示：推荐选择适合自己屏幕分辨率的视频，否则可能会导致壁纸显示异常。当前桌面分辨率为：<span class="screen-resolution">{{ screenResolution }}</span></p>
       <div class="selected-info" v-if="selectedVideo">
         <video :src="selectedVideo" controls autoplay muted loop style="width: auto; max-height: 50vh; object-fit: contain;"></video>
         <div v-if="videoResolution" class="video-resolution">{{ videoResolution }}</div>
@@ -60,12 +61,18 @@ const videoResolution = ref('')
 const onlineVideos = ref([])
 const pageNo = ref(1)
 const total = ref(0)
+const screenResolution = ref('')
 
 const emit = defineEmits(['apply', 'favorite'])
 
 const BASE_URL = 'https://oss.ytab.top/yy_video_wallpaper/'
 
+function getScreenResolution() {
+  screenResolution.value = `${window.screen.width}*${window.screen.height}`
+}
+
 onMounted(async () => {
+  getScreenResolution()
   fetchOnlineVideos()
 })
 
@@ -75,8 +82,11 @@ function handleTabChange(cat) {
   }
 }
 
+const loading = ref(false)
+
 async function fetchOnlineVideos(page = 1) {
   try {
+    loading.value = true
     const res = await fetch(`https://go.ytab.top/users/video_wallpaper_list?page=${page}&limit=16`)
     const { data } = await res.json()
     
@@ -90,6 +100,8 @@ async function fetchOnlineVideos(page = 1) {
     total.value = data.total || 0
   } catch (e) {
     console.error('获取在线视频失败:', e)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -135,6 +147,11 @@ function removeSelectedVideo() {
 </script>
 
 <style scoped>
+.screen-resolution {
+  font-size: 14px;
+  font-weight: bold;
+}
+
 .selected-info {
   position: relative;
   display: flex;

@@ -5,7 +5,7 @@
         v-for="item in navItems"
         :key="item.path"
         class="nav-item"
-        :class="{ active: currentRoute === item.path }"
+        :class="{ active: isActive(item.path) }"
         @click="goTo(item.path)"
       >
         <span class="nav-icon" :title="item.label">{{ item.icon }}</span>
@@ -47,6 +47,10 @@ const navItems = [
   { path: '/game', label: '玩游戏', icon: '🎮' },
   { path: '/tools', label: '小工具', icon: '🛠️' }
 ]
+
+function isActive(path) {
+  return currentRoute.value === path || currentRoute.value.startsWith(path + '/')
+}
 
 function goTo(path) {
   router.push(path)
