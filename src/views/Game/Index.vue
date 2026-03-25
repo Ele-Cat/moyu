@@ -1,7 +1,6 @@
 <template>
   <div class="game-page">
     <div class="game-list" v-if="!hasChildRoute">
-      <div class="page-title">游戏中心</div>
       <div class="game-grid">
         <div 
           v-for="game in games" 
@@ -15,18 +14,30 @@
         </div>
       </div>
     </div>
-    <router-view v-else />
+
+    <template v-else>
+      <el-page-header class="page-header" :icon="ArrowLeft" @back="goBack">
+        <template #content>
+          <span> {{ game.name }} </span>
+        </template>
+      </el-page-header>
+      <router-view />
+    </template>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 
 defineOptions({ name: 'Game' })
 
 const router = useRouter()
 const route = useRoute()
+const game = computed(() => {
+  return games.find(g => g.route === route.path)
+})
 
 const games = [
   {
@@ -80,6 +91,10 @@ const hasChildRoute = computed(() => {
 function enterGame(game) {
   router.push(game.route)
 }
+
+function goBack() {
+  router.back()
+}
 </script>
 
 <style lang="less" scoped>
@@ -89,21 +104,18 @@ function enterGame(game) {
   overflow: auto;
 }
 
+.page-header {
+  margin-bottom: 20px;
+}
+
 .game-list {
   padding: 20px;
 }
 
-.page-title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: var(--text-color);
-}
-
 .game-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
 }
 
 .game-card {

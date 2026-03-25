@@ -1,23 +1,5 @@
 <template>
   <div class="maze-game">
-    <div class="game-nav">
-      <el-button 
-        type="primary" 
-        :icon="ArrowLeft" 
-        circle 
-        size="small"
-        @click="goBack"
-      />
-      <div class="game-title">迷宫小游戏</div>
-      <el-button 
-        type="info" 
-        :icon="QuestionFilled" 
-        circle 
-        size="small"
-        @click="showHelp = true"
-      />
-    </div>
-    
     <div class="game-content">
       <div class="difficulty-selector">
         <el-button 

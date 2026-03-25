@@ -84,10 +84,9 @@
         <img v-if="previewing.type === 'image'" :src="previewing.url" :alt="previewing.name" />
         <video v-else :src="previewing.url" controls autoplay muted></video>
         <div class="preview-actions">
-          <slot name="preview-actions" :item="previewing">
-            <el-button v-if="showApply" type="primary" @click="$emit('apply', previewing); closePreview()">设为壁纸</el-button>
-            <el-button v-if="showFavorite" @click="$emit('favorite', previewing);">{{isFavorited(previewing) ? '取消收藏' : '收藏'}}</el-button>
-          </slot>
+          <el-button type="success" :loading="downloading" @click="handleDownload">{{downloading ? '下载中' : '下载'}}</el-button>
+          <el-button v-if="showApply" type="primary" @click="$emit('apply', previewing); closePreview()">设为壁纸</el-button>
+          <el-button v-if="showFavorite" @click="$emit('favorite', previewing);">{{isFavorited(previewing) ? '取消收藏' : '收藏'}}</el-button>
           <el-button @click="closePreview">关闭</el-button>
         </div>
       </div>
@@ -97,11 +96,17 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import { PictureFilled, View, StarFilled, Star, Delete } from '@element-plus/icons-vue'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
+import { useAppStore } from '@/stores/modules/app'
 import { formatTimestamp } from '@/utils/util'
+import { ElMessage } from 'element-plus'
 
 const store = useWallpaperStore()
+const appStore = useAppStore()
+
+const downloading = ref(false)
 
 const props = defineProps({
   items: {
@@ -198,6 +203,35 @@ function handleClick(item) {
 
 function closePreview() {
   previewing.value = null
+}
+
+async function handleDownload() {
+  if (!previewing.value || !previewing.value.url) return
+  
+  downloading.value = true
+  ElMessage.info('下载中，请稍后...')
+  try {
+    const url = previewing.value.url
+    const storagePath = await invoke('get_storage_path')
+    const downloadDir = `${storagePath}/wallpaper`
+    
+    const ext = previewing.value.type === 'image' ? 'jpg' : 'mp4'
+    const fileName = `wallpaper_${Date.now()}.${ext}`
+    
+    await invoke('download_file', {
+      url: url,
+      dir: downloadDir,
+      fileName: fileName
+    })
+    
+    ElMessage.success('下载成功')
+    closePreview()
+  } catch (error) {
+    console.error('下载失败:', error)
+    ElMessage.error('下载失败: ' + error)
+  } finally {
+    downloading.value = false
+  }
 }
 
 function handlePageChange(pageNo) {

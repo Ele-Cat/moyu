@@ -54,6 +54,7 @@ export const useAppStore = defineStore("app", {
       showSettings: false,
       currentThemeId: 'default',
       themes,
+      storagePath: '',
     };
   },
   getters: {
@@ -76,6 +77,10 @@ export const useAppStore = defineStore("app", {
       this.isDark = value;
       const theme = this.currentTheme;
       this.applyElementPlusTheme(theme.primaryColor);
+    },
+
+    setStoragePath(path) {
+      this.storagePath = path;
     },
 
     setTheme(themeId) {
@@ -146,7 +151,7 @@ export const useAppStore = defineStore("app", {
     strategies: [
       {
         storage: localStorage,
-        paths: ['sidebarCollapsed', 'isDark', 'bossKeyEnabled', 'currentThemeId'],
+        paths: ['sidebarCollapsed', 'isDark', 'bossKeyEnabled', 'currentThemeId', 'storagePath'],
       },
     ],
   },

@@ -99,6 +99,59 @@ fn get_desktop_path() -> Result<String, String> {
 }
 
 #[tauri::command]
+/// 获取存储路径
+fn get_storage_path(app: tauri::AppHandle) -> Result<String, String> {
+    let config_dir = app.path()
+        .app_config_dir()
+        .map_err(|e| format!("获取配置目录失败: {}", e))?;
+    
+    let config_file = config_dir.join("storage_path.txt");
+    
+    if config_file.exists() {
+        std::fs::read_to_string(&config_file)
+            .map(|s| s.trim().to_string())
+            .map_err(|e| format!("读取存储路径失败: {}", e))
+    } else {
+        app.path()
+            .app_data_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .map_err(|e| format!("获取应用数据目录失败: {}", e))
+    }
+}
+
+#[tauri::command]
+/// 设置存储路径
+fn set_storage_path(path: String, app: tauri::AppHandle) -> Result<(), String> {
+    let config_dir = app.path()
+        .app_config_dir()
+        .map_err(|e| format!("获取配置目录失败: {}", e))?;
+    
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("创建配置目录失败: {}", e))?;
+    
+    let config_file = config_dir.join("storage_path.txt");
+    std::fs::write(&config_file, &path)
+        .map_err(|e| format!("保存存储路径失败: {}", e))
+}
+
+#[tauri::command]
+/// 选择文件夹
+async fn choose_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    
+    let (tx, rx) = std::sync::mpsc::channel();
+    
+    app.dialog()
+        .file()
+        .set_title("选择存储位置")
+        .pick_folder(move |folder| {
+            let _ = tx.send(folder.map(|p| p.to_string()));
+        });
+    
+    rx.recv().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 /// 扫描文件夹获取文件列表
 fn scan_folder(path: String) -> Result<Vec<FileInfo>, String> {
     use std::fs;
@@ -181,13 +234,41 @@ use wallpaper::set_from_path;
 
 #[tauri::command]
 /// 设置桌面壁纸（支持网络图片）
-async fn set_wallpaper(url: String) -> Result<String, String> {
+async fn set_wallpaper(url: String, app: tauri::AppHandle) -> Result<String, String> {
     use std::path::PathBuf;
     
+    let storage_path = {
+        let config_dir = app.path()
+            .app_config_dir()
+            .map_err(|e| format!("获取配置目录失败: {}", e))?;
+        
+        let config_file = config_dir.join("storage_path.txt");
+        
+        if config_file.exists() {
+            std::fs::read_to_string(&config_file)
+                .map(|s| s.trim().to_string())
+                .unwrap_or_else(|_| {
+                    app.path()
+                        .app_data_dir()
+                        .unwrap_or_else(|_| PathBuf::from("."))
+                        .to_string_lossy()
+                        .to_string()
+                })
+        } else {
+            app.path()
+                .app_data_dir()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| {
+                    dirs::cache_dir()
+                        .unwrap_or_else(|| PathBuf::from("."))
+                        .to_string_lossy()
+                        .to_string()
+                })
+        }
+    };
+    
     let path = if url.starts_with("http://") || url.starts_with("https://") {
-        let cache_dir = dirs::cache_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("wallpaper_cache");
+        let cache_dir = PathBuf::from(&storage_path).join("wallpaper");
         
         std::fs::create_dir_all(&cache_dir)
             .map_err(|e| format!("创建缓存目录失败: {}", e))?;
@@ -221,6 +302,32 @@ async fn set_wallpaper(url: String) -> Result<String, String> {
     
     set_from_path(&path).map_err(|e| format!("设置壁纸失败: {}", e))?;
     Ok("壁纸设置成功".to_string())
+}
+
+#[tauri::command]
+/// 保存文件到指定目录
+async fn download_file(url: String, dir: String, file_name: String) -> Result<String, String> {
+    use std::path::PathBuf;
+    
+    let dir_path = PathBuf::from(&dir);
+    std::fs::create_dir_all(&dir_path)
+        .map_err(|e| format!("创建目录失败: {}", e))?;
+    
+    let file_path = dir_path.join(&file_name);
+    
+    let response = reqwest::get(&url)
+        .await
+        .map_err(|e| format!("下载失败: {}", e))?;
+    
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| format!("读取数据失败: {}", e))?;
+    
+    std::fs::write(&file_path, &bytes)
+        .map_err(|e| format!("保存文件失败: {}", e))?;
+    
+    Ok(file_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
@@ -326,10 +433,14 @@ pub fn run() {
             hide_to_tray,
             show_window,
             get_desktop_path,
+            get_storage_path,
+            set_storage_path,
+            choose_folder,
             scan_folder,
             read_novel_content,
             fetch_news,
             set_wallpaper,
+            download_file,
             refresh_wallpaper,
         ])
         .run(tauri::generate_context!())

@@ -1,46 +1,43 @@
 <template>
   <div class="news-page">
-    <div class="categories">
-      <button
-        v-for="cat in categories"
-        :key="cat.value"
-        :class="{ active: currentCategory === cat.value }"
-        @click="filterCategory(cat.value)"
-      >
-        {{ cat.label }}
-      </button>
-    </div>
+    <CategoryTabs v-model="currentCategory" :categories="categories" />
 
     <div class="news-content">
-      <div v-if="loading" class="loading">
-        加载中...
-      </div>
-
-      <div v-else class="hot-list">
-        <div
-          v-for="source in filteredSources"
-          :key="source.id"
-          class="source-card"
-        >
-          <div class="source-header">
-            <span class="source-name">{{ source.name }}</span>
-            <span class="source-category">{{ source.categoryLabel }}</span>
-          </div>
-          <div class="source-list">
-            <div
-              v-for="item in source.items"
-              :key="item.url"
-              class="news-item"
-              @click="openNews(item)"
-            >
-              <div class="news-title">{{ item.title }}</div>
-              <div class="news-meta">
-                <span class="hot-value">{{ item.hot_value }}</span>
+      <el-scrollbar>
+        <div v-if="loading" class="skeleton-container">
+          <el-skeleton animated v-for="i in 16" :key="i" class="skeleton-grid">
+            <template #template>
+              <div class="skeleton-item">
+                <el-skeleton-item v-for="j in 8" :key="j" class="skeleton-row" />
               </div>
+            </template>
+          </el-skeleton>
+        </div>
+        
+
+        <div v-else class="hot-list">
+          <div
+            v-for="source in filteredSources"
+            :key="source.id"
+            class="source-card"
+          >
+            <div class="source-header">
+              <span class="source-name">{{ source.name }}</span>
+              <span class="source-category">{{ source.categoryLabel }}</span>
             </div>
+            <el-scrollbar class="source-list">
+              <div
+                v-for="item in source.items"
+                :key="item.url"
+                class="news-item"
+                @click="openNews(item)"
+              >
+                <div class="news-title" :title="item.title">{{ item.title }}</div>
+              </div>
+            </el-scrollbar>
           </div>
         </div>
-      </div>
+      </el-scrollbar>
     </div>
   </div>
 </template>
@@ -50,16 +47,17 @@ defineOptions({ name: 'NewsList' })
 import { ref, computed, onMounted } from 'vue'
 import { get } from '@/hooks/useApi'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import CategoryTabs from '@/components/CategoryTabs/Index.vue'
 
 const categories = [
-  { label: '全部', value: 'all' },
-  { label: '社交', value: 'social' },
-  { label: '资讯', value: 'news' },
-  { label: '视频', value: 'video' },
-  { label: '财经', value: 'finance' },
-  { label: '科技', value: 'tech' },
-  { label: '社区', value: 'community' },
-  { label: '国际', value: 'international' },
+  { category: '全部', id: 'all' },
+  { category: '社交', id: 'social' },
+  { category: '资讯', id: 'news' },
+  { category: '视频', id: 'video' },
+  { category: '财经', id: 'finance' },
+  { category: '科技', id: 'tech' },
+  { category: '社区', id: 'community' },
+  { category: '国际', id: 'international' },
 ]
 
 const hotSources = [
@@ -103,7 +101,6 @@ const hotSources = [
   { id: 'steam', name: 'Steam', category: 'international', categoryLabel: '国际' },
   { id: 'zaobao', name: '联合早报', category: 'international', categoryLabel: '国际' },
   { id: 'cankaoxiaoxi', name: '参考消息', category: 'international', categoryLabel: '国际' },
-  { id: 'sputniknewscn', name: '卫星通讯社', category: 'international', categoryLabel: '国际' },
   { id: 'kaopu', name: '靠谱新闻', category: 'international', categoryLabel: '国际' },
 ]
 
@@ -117,10 +114,6 @@ const filteredSources = computed(() => {
   }
   return sourceData.value.filter(s => s.category === currentCategory.value)
 })
-
-function filterCategory(category) {
-  currentCategory.value = category
-}
 
 async function fetchSource(source) {
   try {
@@ -163,53 +156,35 @@ onMounted(() => {
 
 <style lang="less" scoped>
 .news-page {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-color);
-}
-
-.categories {
-  display: flex;
-  gap: 10px;
-  padding: 15px 20px;
-  background: var(--bg-color-secondary);
-  border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
-  flex-shrink: 0;
-
-  button {
-    padding: 8px 16px;
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    background: var(--bg-color-secondary);
-    color: var(--text-color-secondary);
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &.active {
-      background: var(--primary-color);
-      color: #fff;
-      border-color: var(--primary-color);
-    }
-  }
+  padding: 10px 20px;
 }
 
 .news-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
+  height: calc(100vh - 110px);
+  overflow: hidden;
 }
 
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-color-muted);
+.skeleton-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-grid {
+  display: flex;
+  flex-direction: column;
+  height: 240px;
+}
+
+.skeleton-item {
+  display: grid;
+  gap: 16px;
 }
 
 .hot-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 .source-card {
@@ -222,7 +197,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 15px;
+  padding: 8px 10px;
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
   color: #fff;
 }
@@ -237,12 +212,12 @@ onMounted(() => {
 }
 
 .source-list {
-  max-height: 400px;
+  max-height: 360px;
   overflow-y: auto;
 }
 
 .news-item {
-  padding: 12px 15px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: background 0.2s;
