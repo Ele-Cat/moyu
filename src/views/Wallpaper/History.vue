@@ -58,7 +58,7 @@ function handleDelete(item) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .history-header {
   display: flex;
   justify-content: space-between;

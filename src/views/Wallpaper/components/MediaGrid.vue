@@ -205,7 +205,7 @@ function handlePageChange(pageNo) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .media-grid-container {
   width: 100%;
 }
@@ -239,13 +239,27 @@ function handlePageChange(pageNo) {
   border-radius: 6px;
   overflow: hidden;
   cursor: pointer;
-}
 
-.media-item .media-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.2s;
+  .media-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+  }
+
+  &:hover {
+    .media-image {
+      transform: scale(1.1);
+    }
+
+    .hover-title {
+      opacity: 1;
+    }
+
+    .hover-actions {
+      opacity: 1;
+    }
+  }
 }
 
 .image-slot {
@@ -255,10 +269,6 @@ function handlePageChange(pageNo) {
   width: 100%;
   height: 100%;
   font-size: 12px;
-}
-
-.media-item:hover .media-image {
-  transform: scale(1.1);
 }
 
 .hover-title {
@@ -277,10 +287,6 @@ function handlePageChange(pageNo) {
   transition: opacity 0.2s;
 }
 
-.media-item:hover .hover-title {
-  opacity: 1;
-}
-
 .hover-actions {
   position: absolute;
   inset: 0;
@@ -291,32 +297,28 @@ function handlePageChange(pageNo) {
   gap: 18px;
   opacity: 0;
   transition: opacity 0.2s;
-}
 
-.hover-actions.bottom-actions {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  top: auto;
-  align-items: flex-end;
-  padding-bottom: 8px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
-}
+  &.bottom-actions {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    align-items: flex-end;
+    padding-bottom: 8px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
+  }
 
-.media-item:hover .hover-actions {
-  opacity: 1;
-}
+  .el-icon {
+    cursor: pointer;
+    font-size: 18px;
+    color: #fff;
+    transition: color 0.2s;
 
-.hover-actions .el-icon {
-  cursor: pointer;
-  font-size: 18px;
-  color: #fff;
-  transition: color 0.2s;
-}
-
-.hover-actions .el-icon:hover {
-  color: var(--primary-color);
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
 }
 
 .empty-tip {
@@ -348,12 +350,12 @@ function handlePageChange(pageNo) {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
 
-.preview-content img,
-.preview-content video {
-  max-width: 90vw;
-  max-height: 80vh;
+  img,
+  video {
+    max-width: 90vw;
+    max-height: 80vh;
+  }
 }
 
 .preview-actions {

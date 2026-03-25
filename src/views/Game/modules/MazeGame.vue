@@ -326,7 +326,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .maze-game {
   display: flex;
   flex-direction: column;
@@ -422,44 +422,44 @@ onUnmounted(() => {
   position: relative;
   border: none !important;
   outline: none !important;
-}
 
-.cell > div {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  > div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.cell.wall {
-  background: #000;
-}
+  &.wall {
+    background: #000;
+  }
 
-.cell.path {
-  background: #fff;
-}
+  &.path {
+    background: #fff;
+  }
 
-.cell.start {
-  background: #fff;
-  position: relative;
-}
+  &.start {
+    background: #fff;
+    position: relative;
+  }
 
-.cell.end {
-  background: #fff;
-  position: relative;
-}
+  &.end {
+    background: #fff;
+    position: relative;
+  }
 
-.cell.player {
-  background: #e3f2fd;
-  animation: pulse 1s infinite;
-}
+  &.player {
+    background: #e3f2fd;
+    animation: pulse 1s infinite;
+  }
 
-.cell.visited {
-  background: #fff3cd;
+  &.visited {
+    background: #fff3cd;
+  }
 }
 
 @keyframes pulse {
@@ -496,10 +496,10 @@ onUnmounted(() => {
 
 .help-content, .win-content {
   text-align: center;
-}
 
-.help-content p {
-  margin: 10px 0;
+  p {
+    margin: 10px 0;
+  }
 }
 
 .new-record {

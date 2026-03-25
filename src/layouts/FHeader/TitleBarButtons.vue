@@ -69,7 +69,7 @@ getCurrentWindow().isMaximized().then(max => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .titlebar-right {
   display: flex;
   gap: 5px;
@@ -88,19 +88,19 @@ getCurrentWindow().isMaximized().then(max => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
 
-.window-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 
-.window-btn .icon {
-  width: 14px;
-  height: 14px;
-  filter: var(--icon-filter);
-}
+  .icon {
+    width: 14px;
+    height: 14px;
+    filter: var(--icon-filter);
+  }
 
-.window-btn.close:hover {
-  background: #e81123;
+  &.close:hover {
+    background: #e81123;
+  }
 }
 </style>

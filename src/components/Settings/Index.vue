@@ -12,10 +12,28 @@
           <h3>外观设置</h3>
           
           <div class="setting-item">
+            <label>选择主题</label>
+            <div class="theme-grid">
+              <div
+                v-for="theme in appStore.themes"
+                :key="theme.id"
+                :class="['theme-card', { active: theme.id === appStore.currentThemeId }]"
+                @click="handleThemeChange(theme.id)"
+              >
+                <div class="theme-preview" :style="{ background: `linear-gradient(135deg, ${theme.primaryColor} 0%, ${theme.primaryColorEnd} 100%)` }">
+                  <span v-if="theme.isDark" class="dark-icon">🌙</span>
+                  <span v-else class="sun-icon">☀️</span>
+                </div>
+                <span class="theme-name">{{ theme.name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-item">
             <label>暗黑模式</label>
             <el-switch
-              v-model="isDark"
-              @change="handleThemeChange"
+              :model-value="appStore.isDark"
+              @change="handleDarkModeChange"
             />
           </div>
         </div>
@@ -56,6 +74,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useDark } from '@/hooks/useDark'
+import { useAppStore } from '@/stores/modules/app'
 
 const props = defineProps({
   modelValue: Boolean
@@ -64,6 +83,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const { isDark, setDark } = useDark()
+const appStore = useAppStore()
 
 const activeTab = ref('appearance')
 
@@ -72,18 +92,22 @@ const visible = computed({
   set: (val) => emit('update:modelValue', val)
 })
 
-function handleThemeChange(val) {
+function handleThemeChange(themeId) {
+  appStore.setTheme(themeId)
+}
+
+function handleDarkModeChange(val) {
   setDark(val)
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .settings-tabs {
   min-height: 300px;
-}
 
-.settings-tabs :deep(.el-tabs__content) {
-  padding: 0 20px;
+  :deep(.el-tabs__content) {
+    padding: 0 20px;
+  }
 }
 
 .settings-section h3 {
@@ -95,13 +119,13 @@ function handleThemeChange(val) {
 
 .setting-item {
   margin-bottom: 24px;
-}
 
-.setting-item label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: var(--text-color);
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-color);
+  }
 }
 
 .setting-tip {
@@ -114,15 +138,15 @@ function handleThemeChange(val) {
   display: flex;
   align-items: center;
   gap: 8px;
-}
 
-.shortcut-display kbd {
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 4px 12px;
-  font-family: var(--font-family);
-  font-size: 14px;
+  kbd {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: var(--font-family);
+    font-size: 14px;
+  }
 }
 
 .about-info {
@@ -156,5 +180,44 @@ function handleThemeChange(val) {
   margin-top: 16px;
   font-size: 14px;
   color: var(--text-color-muted);
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.theme-card {
+  cursor: pointer;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  background: var(--bg-color-secondary);
+
+  &:hover {
+    transform: scale(1.02);
+  }
+
+  &.active {
+    border-color: var(--primary-color);
+  }
+}
+
+.theme-preview {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.theme-name {
+  display: block;
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-color);
 }
 </style>

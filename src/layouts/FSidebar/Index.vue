@@ -57,7 +57,7 @@ function goTo(path) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .sidebar {
   width: 160px;
   background: var(--bg-color-secondary);
@@ -66,10 +66,10 @@ function goTo(path) {
   box-shadow: var(--shadow);
   transition: width 0.3s ease, background-color 0.3s;
   position: relative;
-}
 
-.sidebar.collapsed {
-  width: 60px;
+  &.collapsed {
+    width: 60px;
+  }
 }
 
 .nav-menu {
@@ -85,20 +85,20 @@ function goTo(path) {
   color: var(--text-color);
   transition: all 0.3s ease;
   gap: 12px;
+
+  &:hover {
+    background: var(--hover-bg);
+  }
+
+  &.active {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
+    color: #fff;
+  }
 }
 
 .sidebar.collapsed .nav-item {
   padding: 8px 16px;
   justify-content: center;
-}
-
-.nav-item:hover {
-  background: var(--hover-bg);
-}
-
-.nav-item.active {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
-  color: #fff;
 }
 
 .nav-icon {
@@ -134,14 +134,14 @@ function goTo(path) {
   align-items: center;
   justify-content: center;
   gap: 8px;
+
+  &:hover {
+    opacity: 0.9;
+  }
 }
 
 .sidebar.collapsed .settings-btn {
   padding: 10px;
-}
-
-.settings-btn:hover {
-  opacity: 0.9;
 }
 
 .toggle-btn {

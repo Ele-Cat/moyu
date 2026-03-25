@@ -199,7 +199,7 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .novel-reader {
   display: flex;
   flex-direction: column;
@@ -220,16 +220,16 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
-}
 
-.select-area button {
-  padding: 15px 30px;
-  font-size: 18px;
-  border: none;
-  border-radius: 10px;
-  background: #667eea;
-  color: #fff;
-  cursor: pointer;
+  button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #667eea;
+    color: #fff;
+    cursor: pointer;
+  }
 }
 
 .tip {
@@ -252,10 +252,10 @@ onMounted(() => {
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s;
-}
 
-.book-item:hover {
-  background: #e0e0e0;
+  &:hover {
+    background: #e0e0e0;
+  }
 }
 
 .reader-area {
@@ -272,15 +272,15 @@ onMounted(() => {
   padding: 10px 20px;
   background: #f5f5f5;
   border-bottom: 1px solid #ddd;
-}
 
-.reader-toolbar button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  background: #667eea;
-  color: #fff;
-  cursor: pointer;
+  button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #667eea;
+    color: #fff;
+    cursor: pointer;
+  }
 }
 
 .reader-content {
@@ -289,16 +289,16 @@ onMounted(() => {
   padding: 30px;
   max-width: 800px;
   margin: 0 auto;
-}
 
-.reader-content h3 {
-  margin: 20px 0 15px;
-  color: #667eea;
-}
+  h3 {
+    margin: 20px 0 15px;
+    color: #667eea;
+  }
 
-.reader-content p {
-  margin-bottom: 10px;
-  text-indent: 2em;
+  p {
+    margin-bottom: 10px;
+    text-indent: 2em;
+  }
 }
 
 .settings-panel {
@@ -310,27 +310,27 @@ onMounted(() => {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
 
-.settings-panel h3 {
-  margin-bottom: 20px;
+  h3 {
+    margin-bottom: 20px;
+  }
 }
 
 .setting-row {
   margin-bottom: 15px;
-}
 
-.setting-row label {
-  display: block;
-  margin-bottom: 8px;
-}
+  label {
+    display: block;
+    margin-bottom: 8px;
+  }
 
-.setting-row input,
-.setting-row select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  input,
+  select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+  }
 }
 
 .settings-btn {

@@ -38,7 +38,7 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .video-wallpaper {
   width: 100vw;
   height: 100vh;

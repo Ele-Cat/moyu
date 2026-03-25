@@ -25,8 +25,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeMount } from 'vue'
 import MediaGrid from './components/MediaGrid.vue'
+import { useWallpaperStore } from '@/stores/modules/wallpaper'
+
+const wallpaperStore = useWallpaperStore()
 
 const loading = ref(false)
 const wallpapers = ref([])
@@ -35,20 +38,31 @@ const currentCategory = ref('biying')
 const pageNo = ref(1)
 const total = ref(0)
 
+const biyingCategory = { id: 'biying', category: '必应壁纸' }
+
+const emit = defineEmits(['apply', 'favorite'])
+
+onBeforeMount(() => {
+  loading.value = true
+})
+
 onMounted(async () => {
   await fetchCategories()
   await fetchWallpapers('biying')
 })
 
-const emit = defineEmits(['apply', 'favorite'])
-
-const biyingCategory = { id: 'biying', category: '必应壁纸' }
-
 async function fetchCategories() {
+  if (wallpaperStore.staticCategories.length > 0) {
+    categories.value = [biyingCategory, ...wallpaperStore.staticCategories]
+    return
+  }
+  
   try {
     const res = await fetch('https://go.ytab.top/api/wallpaper_category')
     const { data } = await res.json()
-    categories.value = [biyingCategory, ...data.filter(item => !!item.old_id).map(item => ({ ...item, id: item.old_id || item.id }))]
+    const fetchedCategories = data.filter(item => !!item.old_id).map(item => ({ ...item, id: item.old_id || item.id }))
+    categories.value = [biyingCategory, ...fetchedCategories]
+    wallpaperStore.setStaticCategories(fetchedCategories)
   } catch (e) {
     console.error('获取分类失败:', e)
     categories.value = [biyingCategory]
@@ -56,7 +70,6 @@ async function fetchCategories() {
 }
 
 async function fetchWallpapers(categoryId, pageNo = 1) {
-  loading.value = true
   try {
     let url = ''
     if (categoryId === 'biying') {

@@ -50,7 +50,7 @@ function clearFavorite() {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .favorite-header {
   display: flex;
   justify-content: space-between;

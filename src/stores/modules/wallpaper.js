@@ -5,15 +5,17 @@ export const useWallpaperStore = defineStore("wallpaper", {
     return {
       history: [],
       favorites: [],
-      currentVideoPath: null,
       videoActive: false,
+      videoPath: null,
+      staticCategories: [],
     };
   },
   getters: {
     getHistory: (state) => state.history,
     getFavorites: (state) => state.favorites,
     isVideoActive: (state) => state.videoActive,
-    getCurrentVideoPath: (state) => state.currentVideoPath,
+    getVideoPath: (state) => state.videoPath,
+    getStaticCategories: (state) => state.staticCategories,
   },
   actions: {
     addToHistory(item) {
@@ -53,8 +55,12 @@ export const useWallpaperStore = defineStore("wallpaper", {
       this.videoActive = active;
     },
     
-    setCurrentVideoPath(url) {
-      this.currentVideoPath = url;
+    setVideoPath(url) {
+      this.videoPath = url;
+    },
+    
+    setStaticCategories(categories) {
+      this.staticCategories = categories;
     },
   },
   persist: {
@@ -62,7 +68,7 @@ export const useWallpaperStore = defineStore("wallpaper", {
     strategies: [
       {
         storage: localStorage,
-        paths: ['history', 'favorites', 'currentVideoPath', 'videoActive'],
+        paths: ['history', 'favorites', 'videoPath', 'videoActive', 'staticCategories'],
       },
     ],
   },

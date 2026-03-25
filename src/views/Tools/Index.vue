@@ -256,7 +256,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .tools-page {
   display: flex;
   flex-direction: column;
@@ -274,11 +274,11 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 20px;
-}
 
-.tool-section h3 {
-  margin: 0 0 20px;
-  color: #333;
+  h3 {
+    margin: 0 0 20px;
+    color: #333;
+  }
 }
 
 .countdown-display {
@@ -311,82 +311,82 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-}
 
-.input-group label {
-  color: #666;
-}
+  label {
+    color: #666;
+  }
 
-.input-group input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
+  input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+  }
 }
 
 .modes {
   display: flex;
   gap: 10px;
-}
 
-.modes button {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+  button {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
 
-.modes button.active {
-  background: #667eea;
-  color: #fff;
-  border-color: #667eea;
+    &.active {
+      background: #667eea;
+      color: #fff;
+      border-color: #667eea;
+    }
+  }
 }
 
 .pomodoro-settings {
   display: flex;
   gap: 10px;
-}
 
-.pomodoro-settings button {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  background: #4caf50;
-  color: #fff;
-  cursor: pointer;
-}
+  button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background: #4caf50;
+    color: #fff;
+    cursor: pointer;
 
-.pomodoro-settings button.break-btn {
-  background: #ff9800;
-}
+    &.break-btn {
+      background: #ff9800;
+    }
 
-.pomodoro-settings button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
 }
 
 .actions {
   display: flex;
   gap: 10px;
-}
 
-.actions button {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-}
+  button {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+  }
 
-.actions .minimize-btn {
-  background: #667eea;
-  color: #fff;
-  border: none;
+  .minimize-btn {
+    background: #667eea;
+    color: #fff;
+    border: none;
+  }
 }
 
 .clipboard-header {
@@ -394,19 +394,19 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-}
 
-.clipboard-header span {
-  color: #666;
-}
+  span {
+    color: #666;
+  }
 
-.clipboard-header button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  background: #ff6b6b;
-  color: #fff;
-  cursor: pointer;
+  button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #ff6b6b;
+    color: #fff;
+    cursor: pointer;
+  }
 }
 
 .clipboard-list {
@@ -421,10 +421,10 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
 
-.clipboard-item:hover {
-  background: #f9f9f9;
+  &:hover {
+    background: #f9f9f9;
+  }
 }
 
 .empty {

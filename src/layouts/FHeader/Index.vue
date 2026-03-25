@@ -12,7 +12,7 @@
 import TitleBarButtons from './TitleBarButtons.vue'
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .titlebar {
   position: relative;
   height: var(--header-height);

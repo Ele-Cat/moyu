@@ -217,7 +217,7 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .music-player {
   display: flex;
   flex-direction: column;
@@ -243,15 +243,15 @@ onUnmounted(() => {
 .list-header {
   padding: 15px;
   border-bottom: 1px solid #eee;
-}
 
-.list-header button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  background: #2a5298;
-  color: #fff;
-  cursor: pointer;
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    background: #2a5298;
+    color: #fff;
+    cursor: pointer;
+  }
 }
 
 .list {
@@ -266,15 +266,15 @@ onUnmounted(() => {
   padding: 12px 20px;
   cursor: pointer;
   transition: background 0.2s;
-}
 
-.music-item:hover {
-  background: #f5f5f5;
-}
+  &:hover {
+    background: #f5f5f5;
+  }
 
-.music-item.active {
-  background: #e0e0e0;
-  color: #2a5298;
+  &.active {
+    background: #e0e0e0;
+    color: #2a5298;
+  }
 }
 
 .music-icon {
@@ -346,28 +346,28 @@ onUnmounted(() => {
   align-items: center;
   gap: 20px;
   margin-bottom: 30px;
-}
 
-.controls button {
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: #2a5298;
-  color: #fff;
-  font-size: 20px;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
+  button {
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 50%;
+    background: #2a5298;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
 
-.controls button:hover {
-  transform: scale(1.1);
-}
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
 
-.play-btn {
-  width: 60px !important;
-  height: 60px !important;
-  font-size: 24px !important;
+  .play-btn {
+    width: 60px !important;
+    height: 60px !important;
+    font-size: 24px !important;
+  }
 }
 
 .progress {
@@ -376,37 +376,37 @@ onUnmounted(() => {
   gap: 10px;
   width: 100%;
   margin-bottom: 20px;
-}
 
-.progress span {
-  font-size: 12px;
-  color: #666;
-  min-width: 40px;
-}
+  span {
+    font-size: 12px;
+    color: #666;
+    min-width: 40px;
+  }
 
-.progress input[type="range"] {
-  flex: 1;
+  input[type="range"] {
+    flex: 1;
+  }
 }
 
 .extra-controls {
   display: flex;
   align-items: center;
   gap: 15px;
-}
 
-.extra-controls button {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: #f0f0f0;
-  font-size: 18px;
-  cursor: pointer;
-}
+  button {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #f0f0f0;
+    font-size: 18px;
+    cursor: pointer;
+  }
 
-.extra-controls select {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+  }
 }
 </style>

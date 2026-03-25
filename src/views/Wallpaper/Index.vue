@@ -33,22 +33,13 @@ import { ref, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { ElMessage } from 'element-plus'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
-import { setDesktopUnderlay } from 'tauri-plugin-desktop-underlay-api'
+import { useVideoWallpaper } from '@/hooks/useVideoWallpaper'
 import Static from './Static.vue'
 import Dynamic from './Dynamic.vue'
 import History from './History.vue'
 import Favorite from './Favorite.vue'
-let underlayWindow = null
 
-onMounted(async () => {
-  if (wallpaperStore.videoActive) {
-    const existingWindow = await WebviewWindow.getByLabel('underlay')
-    if (existingWindow) {
-      underlayWindow = existingWindow
-    }
-  }
-})
+const { openVideoWallpaper, closeVideoWallpaper } = useVideoWallpaper()
 
 const activeTab = ref('static')
 
@@ -60,56 +51,10 @@ async function handleApply(item) {
       await invoke('set_wallpaper', { url: item.url })
     } else {
       if (item == null) {
-        try {
-          if (underlayWindow) {
-            await setDesktopUnderlay(false, 'underlay')
-            await underlayWindow.close()
-            underlayWindow = null
-          }
-          wallpaperStore.setVideoActive(false)
-          await invoke('refresh_wallpaper')
-        } catch (e) {
-          console.error('停止失败:', e)
-        }
+        await closeVideoWallpaper()
         return
       }
-      try {
-        if (underlayWindow) {
-          await setDesktopUnderlay(false, 'underlay')
-          await underlayWindow.close()
-        }
-        
-        underlayWindow = new WebviewWindow('underlay', {
-          url: `/video-wallpaper?path=${encodeURIComponent(item.url)}`,
-          title: 'VideoWallpaper',
-          width: 1920,
-          height: 1080,
-          x: 0,
-          y: 0,
-          resizable: false,
-          transparent: true,
-          visible: true,
-          decorations: false,
-          alwaysOnBottom: true,
-          skipTaskbar: true,
-          fullscreen: true,
-        })
-        
-        underlayWindow.once('tauri://created', async () => {
-          await setDesktopUnderlay(true, 'underlay')
-        })
-        
-        // underlayWindow.on('tauri://close-requested', async () => {
-        //   underlayWindow = null
-        //   wallpaperStore.setVideoActive(false)
-        //   await invoke('refresh_wallpaper')
-        // })
-        
-        wallpaperStore.setVideoActive(true)
-        wallpaperStore.setCurrentVideoPath(item.url)
-      } catch (e) {
-        console.error('启动失败:', e)
-      }
+      await openVideoWallpaper(item)
     }
     wallpaperStore.addToHistory({
       ...item,
@@ -136,7 +81,7 @@ function handleFavorite(item) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .wallpaper-page {
   height: 100%;
   padding: 10px 20px;

@@ -31,7 +31,7 @@ function handleClick(cat) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .category-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -46,14 +46,14 @@ function handleClick(cat) {
   background: var(--bg-color-secondary);
   font-size: 12px;
   transition: all 0.2s;
-}
 
-.cat-item:hover {
-  background: var(--hover-bg);
-}
+  &:hover {
+    background: var(--hover-bg);
+  }
 
-.cat-item.active {
-  background: var(--primary-color);
-  color: #fff;
+  &.active {
+    background: var(--primary-color);
+    color: #fff;
+  }
 }
 </style>

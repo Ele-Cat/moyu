@@ -146,7 +146,7 @@ function removeSelectedVideo() {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .screen-resolution {
   font-size: 14px;
   font-weight: bold;

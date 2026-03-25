@@ -54,6 +54,36 @@ const router = createRouter({
           name: 'maze-game',
           component: () => import('../views/Game/modules/MazeGame.vue'),
           meta: { title: '迷宫小游戏' }
+        },
+        {
+          path: 'breakout',
+          name: 'breakout-game',
+          component: () => import('../views/Game/modules/BreakoutGame.vue'),
+          meta: { title: '打砖块' }
+        },
+        {
+          path: '2048',
+          name: 'game-2048',
+          component: () => import('../views/Game/modules/Game2048.vue'),
+          meta: { title: '2048' }
+        },
+        {
+          path: 'snake',
+          name: 'snake-game',
+          component: () => import('../views/Game/modules/SnakeGame.vue'),
+          meta: { title: '贪吃蛇' }
+        },
+        {
+          path: 'tetris',
+          name: 'tetris-game',
+          component: () => import('../views/Game/modules/TetrisGame.vue'),
+          meta: { title: '俄罗斯方块' }
+        },
+        {
+          path: 'typing',
+          name: 'typing-game',
+          component: () => import('../views/Game/modules/TypingGame.vue'),
+          meta: { title: '打字练习' }
         }
       ]
     },

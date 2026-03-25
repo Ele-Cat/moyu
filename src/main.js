@@ -5,8 +5,13 @@ import "element-plus/dist/index.css";
 import "element-plus/theme-chalk/dark/css-vars.css";
 import App from "./App.vue";
 import router from "./router";
-import "./assets/styles/variables.css";
+import "./assets/styles/variables.less";
+import "./assets/styles/global.less";
 import components from "./components/index.js";
+
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault()
+})
 
 const app = createApp(App);
 

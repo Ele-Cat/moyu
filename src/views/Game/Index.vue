@@ -35,6 +35,41 @@ const games = [
     icon: '🎮',
     desc: '挑战迷宫，寻找出口',
     route: '/game/maze'
+  },
+  {
+    id: 'breakout',
+    name: '打砖块',
+    icon: '🧱',
+    desc: '经典弹球，回忆童年',
+    route: '/game/breakout'
+  },
+  {
+    id: '2048',
+    name: '2048',
+    icon: '🔢',
+    desc: '数字合并，极其耐玩',
+    route: '/game/2048'
+  },
+  {
+    id: 'snake',
+    name: '贪吃蛇',
+    icon: '🐍',
+    desc: '经典贪吃蛇',
+    route: '/game/snake'
+  },
+  {
+    id: 'tetris',
+    name: '俄罗斯方块',
+    icon: '🧱',
+    desc: '方块消除，益智游戏',
+    route: '/game/tetris'
+  },
+  {
+    id: 'typing',
+    name: '打字练习',
+    icon: '⌨️',
+    desc: '摸鱼打字，速度制胜',
+    route: '/game/typing'
   }
 ]
 
@@ -47,7 +82,7 @@ function enterGame(game) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .game-page {
   height: 100%;
   background: var(--bg-color);
@@ -78,12 +113,12 @@ function enterGame(game) {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid var(--border-color);
-}
 
-.game-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-color);
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+  }
 }
 
 .game-icon {

@@ -50,7 +50,7 @@ function goTo(path) {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .home {
   display: flex;
   flex-direction: column;
@@ -77,11 +77,11 @@ function goTo(path) {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
 
-.module-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  }
 }
 
 .module-icon {

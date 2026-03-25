@@ -161,7 +161,7 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style lang="less" scoped>
 .news-page {
   display: flex;
   flex-direction: column;
@@ -176,22 +176,22 @@ onMounted(() => {
   border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
   flex-shrink: 0;
-}
 
-.categories button {
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  background: var(--bg-color-secondary);
-  color: var(--text-color-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
+  button {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-color-secondary);
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
 
-.categories button.active {
-  background: var(--primary-color);
-  color: #fff;
-  border-color: var(--primary-color);
+    &.active {
+      background: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+  }
 }
 
 .news-content {
@@ -246,14 +246,14 @@ onMounted(() => {
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: background 0.2s;
-}
 
-.news-item:hover {
-  background: var(--hover-bg);
-}
+  &:hover {
+    background: var(--hover-bg);
+  }
 
-.news-item:last-child {
-  border-bottom: none;
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .news-title {

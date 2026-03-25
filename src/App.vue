@@ -27,6 +27,8 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { computed, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/modules/app'
+import { useWallpaperStore } from '@/stores/modules/wallpaper'
+import { useVideoWallpaper } from '@/hooks/useVideoWallpaper'
 import { useDark } from '@/hooks/useDark'
 import FHeader from '@/layouts/FHeader/Index.vue'
 import FSidebar from '@/layouts/FSidebar/Index.vue'
@@ -50,10 +52,25 @@ const cachedViews = computed(() => {
 
 onMounted(() => {
   initDark()
+  initTheme()
+  initWallpaper()
 })
+
+const wallpaperStore = useWallpaperStore()
+const { openVideoWallpaper } = useVideoWallpaper()
+
+function initTheme() {
+  appStore.initTheme()
+}
+
+function initWallpaper() {
+  if (wallpaperStore.isVideoActive) {
+    openVideoWallpaper({ url: wallpaperStore.videoPath })
+  }
+}
 </script>
 
-<style>
+<style lang="less">
 .app-container {
   display: flex;
   flex-direction: column;
@@ -73,11 +90,15 @@ onMounted(() => {
   overflow-x: hidden;
   background: var(--bg-color);
   transition: background-color 0.3s;
-}
 
-.content.fullscreen {
-  height: 100vh;
-  overflow: hidden;
+  &.fullscreen {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  :deep(.el-scrollbar__wrap) {
+    overflow-x: hidden;
+  }
 }
 
 .fade-slide-enter-active,
