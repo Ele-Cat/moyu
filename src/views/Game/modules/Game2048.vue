@@ -1,7 +1,6 @@
 <template>
   <div class="game2048">
     <div class="game-header">
-      <h2>🎮 2048</h2>
       <div class="score-board">
         <div class="score-box">
           <div class="label">得分</div>
@@ -12,7 +11,7 @@
           <div class="value">{{ bestScore }}</div>
         </div>
       </div>
-      <el-button type="primary" size="small" @click="initGame">新游戏</el-button>
+      <el-button type="primary" @click="initGame">新游戏</el-button>
     </div>
     <div class="game-container" @keydown="handleKeydown" tabindex="0" ref="gameContainer">
       <div class="grid">
@@ -38,6 +37,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useGameStore } from '@/stores/modules/game'
+
+const gameStore = useGameStore()
 
 const score = ref(0)
 const bestScore = ref(0)
@@ -77,7 +79,7 @@ function addRandomTile() {
       }
     }
   }
-  
+
   if (emptyCells.length > 0) {
     const cell = emptyCells[Math.floor(Math.random() * emptyCells.length)]
     tiles.value.push({
@@ -92,69 +94,100 @@ function addRandomTile() {
 function move(direction) {
   const { x: dx, y: dy } = direction
   let moved = false
-  const mergedTiles = []
-  
-  const order = dx > 0 || dy > 0 
-    ? [[...tiles.value].sort((a, b) => b.x - a.x + (b.y - a.y) * 0.1)]
-    : [[...tiles.value].sort((a, b) => a.x - b.x + (a.y - b.y) * 0.1)]
-  
-  const sorted = dx > 0 || dy > 0
-    ? [...tiles.value].sort((a, b) => (b.y * 4 + b.x) - (a.y * 4 + a.x))
-    : [...tiles.value].sort((a, b) => (a.y * 4 + a.x) - (b.y * 4 + b.x))
-  
-  const newTiles = []
-  const visited = new Set()
-  
-  for (const tile of sorted) {
-    let x = tile.x
-    let y = tile.y
-    
-    while (true) {
-      const nextX = x + dx
-      const nextY = y + dy
-      
-      if (nextX < 0 || nextX > 3 || nextY < 0 || nextY > 3) break
-      
-      const obstacle = newTiles.find(t => t.x === nextX && t.y === nextY)
-      
-      if (obstacle) {
-        if (obstacle.value === tile.value && !mergedTiles.includes(obstacle.id)) {
-          obstacle.value *= 2
-          score.value += obstacle.value
-          mergedTiles.push(obstacle.id)
+
+  const grid = Array(4).fill(null).map(() => Array(4).fill(null))
+  for (const tile of tiles.value) {
+    grid[tile.y][tile.x] = tile
+  }
+
+  const isRow = dx !== 0
+  const isReverse = dx > 0 || dy > 0
+
+  const processLine = (line) => {
+    const filtered = line.filter(t => t !== null)
+    const result = []
+    let skip = false
+
+    for (let i = 0; i < filtered.length; i++) {
+      if (skip) {
+        skip = false
+        continue
+      }
+      if (i < filtered.length - 1 && filtered[i].value === filtered[i + 1].value) {
+        result.push({ ...filtered[i], value: filtered[i].value * 2 })
+        score.value += filtered[i].value * 2
+        skip = true
+      } else {
+        result.push(filtered[i])
+      }
+    }
+
+    while (result.length < 4) {
+      result.push(null)
+    }
+
+    return result
+  }
+
+  for (let i = 0; i < 4; i++) {
+    let line
+    if (isRow) {
+      line = [grid[i][0], grid[i][1], grid[i][2], grid[i][3]]
+    } else {
+      line = [grid[0][i], grid[1][i], grid[2][i], grid[3][i]]
+    }
+
+    if (isReverse) {
+      line.reverse()
+    }
+
+    const processed = processLine(line)
+
+    if (isReverse) {
+      processed.reverse()
+    }
+
+    for (let j = 0; j < 4; j++) {
+      if (isRow) {
+        if (grid[i][j]?.id !== processed[j]?.id) {
           moved = true
         }
-        break
+        grid[i][j] = processed[j]
+      } else {
+        if (grid[j][i]?.id !== processed[j]?.id) {
+          moved = true
+        }
+        grid[j][i] = processed[j]
       }
-      
-      x = nextX
-      y = nextY
-      moved = true
-    }
-    
-    if (x !== tile.x || y !== tile.y) {
-      newTiles.push({ ...tile, x, y })
-    } else {
-      newTiles.push(tile)
     }
   }
-  
+
+  const newTiles = []
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      if (grid[y][x]) {
+        grid[y][x].x = x
+        grid[y][x].y = y
+        newTiles.push(grid[y][x])
+      }
+    }
+  }
   tiles.value = newTiles
-  
+
   if (moved) {
-    setTimeout(addRandomTile, 150)
+    addRandomTile()
   }
-  
+
   if (score.value > bestScore.value) {
     bestScore.value = score.value
   }
-  
+
   checkGameOver()
 }
 
 function checkGameOver() {
   if (tiles.value.length < 16) return
-  
+
   for (const tile of tiles.value) {
     for (const { x, y } of [
       { x: tile.x + 1, y: tile.y },
@@ -163,12 +196,12 @@ function checkGameOver() {
       { x: tile.x, y: tile.y - 1 }
     ]) {
       const neighbor = tiles.value.find(t => t.x === x && t.y === y)
-      if (!neighbor || neighbor.value === tile.value) {
+      if (neighbor && neighbor.value === tile.value) {
         return
       }
     }
   }
-  
+
   setTimeout(() => {
     alert('游戏结束！得分: ' + score.value)
   }, 300)
@@ -183,12 +216,12 @@ function handleKeydown(e) {
 
 onMounted(() => {
   initGame()
-  bestScore.value = parseInt(localStorage.getItem('2048-best') || '0')
+  bestScore.value = gameStore.game2048Best
   gameContainer.value?.focus()
 })
 
 onUnmounted(() => {
-  localStorage.setItem('2048-best', bestScore.value.toString())
+  gameStore.save2048Score(bestScore.value)
 })
 </script>
 

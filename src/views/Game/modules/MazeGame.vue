@@ -1,90 +1,65 @@
 <template>
-  <div class="maze-game">
-    <div class="game-content">
-      <div class="difficulty-selector">
-        <el-button 
-          v-for="diff in difficulties" 
-          :key="diff.value"
-          :type="currentDifficulty === diff.value ? 'primary' : 'default'"
-          size="small"
-          @click="startGame(diff.value)"
-        >
-          {{ diff.label }}
-        </el-button>
-      </div>
-      
-      <div class="game-info">
-        <div class="timer">
-          <span>用时: {{ formatTime(elapsedTime) }}</span>
-        </div>
-        <div class="best-time" v-if="bestTime">
-          <span>最快记录: {{ formatTime(bestTime) }}</span>
-        </div>
-      </div>
-      
-      <div 
-        class="maze-container" 
-        tabindex="0" 
-        @keydown="handleKeydown"
-        ref="mazeContainer"
-      >
-        <div class="maze-instructions">
-          请使用键盘上的 ←↑→↓ 键或 WASD 进行游戏
-        </div>
-        <div class="maze-wrapper">
-          <div 
-            class="maze"
-            :style="{
-              width: `${mazeSize}px`,
-              height: `${mazeSize}px`,
-              gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-              gridTemplateRows: `repeat(${gridSize}, 1fr)`
-            }"
-          >
-            <div 
-              v-for="(cell, index) in mazeCells"
-              :key="index"
-              class="cell"
-              :class="{
-                'wall': cell === 1,
-                'path': cell === 0,
-                'start': index === startIndex,
-                'end': index === endIndex,
-                'player': index === playerIndex,
-                'visited': visitedCells.includes(index)
-              }"
-            >
-              <div v-if="index === playerIndex" class="player">🧙</div>
-              <div v-if="index === startIndex" class="start-text">start</div>
-              <div v-if="index === endIndex" class="end-text">end</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="game-controls">
-        <el-button @click="startGame(currentDifficulty)">重新开始</el-button>
-      </div>
+  <div class="maze-runner">
+    <div class="timer-container">
+      <span class="timer-label">时间:</span>
+      <span class="timer-value">{{ formatTime(elapsedTime) }}</span>
     </div>
     
-    <el-dialog v-model="showHelp" title="操作说明" width="400px">
+    <div class="controls-row">
+      <el-select v-model="currentDifficulty" @change="handleDifficultyChange" placeholder="选择难度" style="width: 180px;">
+        <el-option :value="10" label="Easy (10x10)" />
+        <el-option :value="15" label="Medium (15x15)" />
+        <el-option :value="20" label="Hard (20x20)" />
+        <el-option :value="30" label="Very Hard (30x30)" />
+      </el-select>
+      <el-button type="primary" @click="startGame">
+        {{ isGameStarted ? '重新开始' : '开始游戏' }}
+      </el-button>
+    </div>
+
+    <div class="best-time" v-if="bestTime">
+      <span>最快记录: {{ formatTime(bestTime) }}</span>
+    </div>
+    
+    <div class="canvas-container">
+      <canvas ref="canvas"></canvas>
+    </div>
+    
+    <div class="controls">
+      <el-button type="info" @click="showHelp = true">帮助</el-button>
+    </div>
+    
+    <el-dialog v-model="showHelp" title="帮助" width="500px">
       <div class="help-content">
-        <p>使用 <b>方向键</b> 或 <b>WASD</b> 控制角色移动</p>
-        <p>🏁 起点 - 角色位置（左上角）</p>
-        <p>🚩 终点 - 到达终点即通关（右下角）</p>
-        <p>🧱 墙壁 - 无法穿越</p>
-        <p>🟡 黄色 - 已走过的路径</p>
+        <h5>游戏目标</h5>
+        <p>玩家需要找到走出迷宫的路径到达终点。</p>
+        
+        <h5>游戏说明</h5>
+        <p>玩家控制 <span class="player-color">绿色方块</span>，游戏开始时出现在左上角。终点是 <span class="end-color">红色方块</span>，位于右下角。</p>
+        
+        <h5>操作方式</h5>
+        <p>使用 <b>方向键</b> 或 <b>WASD</b> 键控制移动。</p>
+        
+        <h5>难度</h5>
+        <p>迷宫随机生成，共有4个难度级别：Easy（简单）、Medium（中等）、Hard（困难）、Very Hard（极难）</p>
+        
+        <h5>计时</h5>
+        <p>点击"开始游戏"按钮或第一次移动后开始计时。</p>
       </div>
+      <template #footer>
+        <el-button type="danger" @click="showHelp = false">关闭</el-button>
+      </template>
     </el-dialog>
     
-    <el-dialog v-model="showWin" title="恭喜通关！" width="300px">
+    <el-dialog v-model="showWin" title="恭喜通关! 👑" width="400px">
       <div class="win-content">
-        <p>用时: {{ formatTime(elapsedTime) }}</p>
-        <p v-if="isNewRecord" class="new-record">🎉 打破记录！</p>
+        <p>难度: <b>{{ difficultyText }}</b></p>
+        <p>用时: <b>{{ formatTime(elapsedTime) }}</b></p>
+        <p v-if="isNewRecord" class="new-record">🎉 新纪录!</p>
         <p v-else>最快记录: {{ formatTime(bestTime) }}</p>
       </div>
       <template #footer>
-        <el-button type="primary" @click="showWin = false; startGame(currentDifficulty)">再来一局</el-button>
+        <el-button type="primary" @click="showWin = false; startGame()">再来一局</el-button>
         <el-button @click="showWin = false">关闭</el-button>
       </template>
     </el-dialog>
@@ -93,204 +68,333 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import { useGameStore } from '@/stores/modules/game'
 
-const router = useRouter()
 const gameStore = useGameStore()
 
-const difficulties = [
-  { value: 'easy', label: '简单', size: 10 },
-  { value: 'medium', label: '中等', size: 15 },
-  { value: 'hard', label: '困难', size: 20 }
-]
-
-const currentDifficulty = ref('easy')
-const gridSize = ref(10)
-const mazeSize = ref(400)
-const mazeCells = ref([])
-const visitedCells = ref([])
-const playerIndex = ref(0)
-const startIndex = ref(0)
-const endIndex = ref(0)
+const canvas = ref(null)
+const currentDifficulty = ref(10)
 const elapsedTime = ref(0)
 const timer = ref(null)
 const isPlaying = ref(false)
+const isGameStarted = ref(false)
+const isTimerStarted = ref(false)
 const showHelp = ref(false)
 const showWin = ref(false)
 const isNewRecord = ref(false)
-const mazeContainer = ref(null)
 
-const bestTime = computed(() => {
-  return gameStore.getMazeRecord(currentDifficulty.value)
+let ctx = null
+let maze = null
+let player = null
+let mazeHeight = 0
+let mazeWidth = 0
+const mazeOffset = 10
+let cellSize = 50
+
+const difficultyText = computed(() => {
+  const map = { 10: 'Easy', 15: 'Medium', 20: 'Hard', 30: 'Very Hard' }
+  return map[currentDifficulty.value] || 'Easy'
 })
 
-function goBack() {
-  router.push('/game')
+const bestTime = computed(() => {
+  return gameStore.getMazeRecord(currentDifficulty.value.toString())
+})
+
+class Cell {
+  constructor(column, row) {
+    this.column = column
+    this.row = row
+    this.wallTop = true
+    this.wallRight = true
+    this.wallBottom = true
+    this.wallLeft = true
+    this.visited = false
+  }
 }
 
-function getGridSize(difficulty) {
-  const diff = difficulties.find(d => d.value === difficulty)
-  return diff ? diff.size : 10
+class Player {
+  constructor() {
+    this.column = 0
+    this.row = 0
+    this.color = '#2e7d32'
+  }
 }
 
-// 生成迷宫 - 深度优先搜索算法
-function generateMaze(size) {
-  const maze = Array(size * size).fill(1)
-  const stack = []
-  
-  // 起点
-  const start = 0
-  maze[start] = 0
-  stack.push(start)
-  
-  while (stack.length > 0) {
-    const current = stack[stack.length - 1]
-    const neighbors = getUnvisitedNeighbors(current, size, maze)
+class Maze {
+  constructor(columns, rows, cellSize) {
+    this.columns = columns
+    this.rows = rows
+    this.cellSize = cellSize
+    this.finishColor = '#dc143c'
+    this.backgroundColor = '#dcdcdc'
+    this.cells = []
+    this.createMaze()
+  }
+
+  createMaze() {
+    mazeHeight = this.cellSize * this.rows
+    mazeWidth = this.cellSize * this.columns
+
+    canvas.value.height = mazeHeight + (mazeOffset * 2)
+    canvas.value.width = mazeWidth + (mazeOffset * 2)
     
-    if (neighbors.length > 0) {
-      const next = neighbors[Math.floor(Math.random() * neighbors.length)]
-      const wall = Math.floor((current + next) / 2)
-      maze[wall] = 0
-      maze[next] = 0
-      stack.push(next)
-    } else {
-      stack.pop()
+    ctx = canvas.value.getContext('2d')
+
+    for (let i = 0; i < this.columns; i++) {
+      this.cells[i] = []
+      for (let j = 0; j < this.rows; j++) {
+        this.cells[i][j] = new Cell(i, j)
+      }
+    }
+
+    const stack = []
+    const randomColumn = getRandomNumber(this.columns)
+    const randomRow = getRandomNumber(this.rows)
+
+    stack.push(this.cells[randomColumn][randomRow])
+
+    let currentCell
+    let nextCell
+    let neighbour
+    let option
+
+    while (this.hasAnyUnvisitedCells()) {
+      currentCell = stack[stack.length - 1]
+      currentCell.visited = true
+
+      if (this.hasAnyUnvisitedNeighbours(currentCell)) {
+        nextCell = null
+        neighbour = false
+        do {
+          option = getRandomNumber(4)
+          switch (option) {
+            case 0:
+              if (currentCell.row !== 0 && !this.cells[currentCell.column][currentCell.row - 1].visited) {
+                currentCell.wallTop = false
+                nextCell = this.cells[currentCell.column][currentCell.row - 1]
+                nextCell.wallBottom = false
+                neighbour = true
+              }
+              break
+            case 1:
+              if (currentCell.column !== (this.columns - 1) && !this.cells[currentCell.column + 1][currentCell.row].visited) {
+                currentCell.wallRight = false
+                nextCell = this.cells[currentCell.column + 1][currentCell.row]
+                nextCell.wallLeft = false
+                neighbour = true
+              }
+              break
+            case 2:
+              if (currentCell.row !== (this.rows - 1) && !this.cells[currentCell.column][currentCell.row + 1].visited) {
+                currentCell.wallBottom = false
+                nextCell = this.cells[currentCell.column][currentCell.row + 1]
+                nextCell.wallTop = false
+                neighbour = true
+              }
+              break
+            case 3:
+              if (currentCell.column !== 0 && !this.cells[currentCell.column - 1][currentCell.row].visited) {
+                currentCell.wallLeft = false
+                nextCell = this.cells[currentCell.column - 1][currentCell.row]
+                nextCell.wallRight = false
+                neighbour = true
+              }
+              break
+          }
+          if (neighbour) {
+            stack.push(nextCell)
+          }
+        } while (!neighbour)
+      } else {
+        stack.pop()
+      }
+    }
+
+    this.drawMaze()
+  }
+
+  hasAnyUnvisitedCells() {
+    for (let i = 0; i < this.columns; i++) {
+      for (let j = 0; j < this.rows; j++) {
+        if (!this.cells[i][j].visited) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  hasAnyUnvisitedNeighbours(cell) {
+    return (
+      (cell.column !== 0 && !this.cells[cell.column - 1][cell.row].visited) ||
+      (cell.column !== (this.columns - 1) && !this.cells[cell.column + 1][cell.row].visited) ||
+      (cell.row !== 0 && !this.cells[cell.column][cell.row - 1].visited) ||
+      (cell.row !== (this.rows - 1) && !this.cells[cell.column][cell.row + 1].visited)
+    )
+  }
+
+  drawMaze() {
+    ctx.fillStyle = this.backgroundColor
+    ctx.fillRect(mazeOffset, mazeOffset, mazeHeight, mazeWidth)
+
+    ctx.fillStyle = this.finishColor
+    ctx.fillRect(
+      mazeOffset + ((this.columns - 1) * this.cellSize) + 4,
+      mazeOffset + ((this.rows - 1) * this.cellSize) + 4,
+      this.cellSize - 8,
+      this.cellSize - 8
+    )
+
+    ctx.strokeStyle = '#2c3e50'
+    ctx.lineWidth = 2
+
+    for (let i = 0; i < this.columns; i++) {
+      for (let j = 0; j < this.rows; j++) {
+        if (this.cells[i][j].wallRight) {
+          ctx.beginPath()
+          ctx.moveTo(mazeOffset + ((i + 1) * this.cellSize), mazeOffset + (j * this.cellSize))
+          ctx.lineTo(mazeOffset + ((i + 1) * this.cellSize), mazeOffset + ((j + 1) * this.cellSize))
+          ctx.stroke()
+        }
+        if (this.cells[i][j].wallBottom) {
+          ctx.beginPath()
+          ctx.moveTo(mazeOffset + (i * this.cellSize), mazeOffset + ((j + 1) * this.cellSize))
+          ctx.lineTo(mazeOffset + ((i + 1) * this.cellSize), mazeOffset + ((j + 1) * this.cellSize))
+          ctx.stroke()
+        }
+        if (this.cells[i][j].wallLeft) {
+          ctx.beginPath()
+          ctx.moveTo(mazeOffset + (i * this.cellSize), mazeOffset + (j * this.cellSize))
+          ctx.lineTo(mazeOffset + (i * this.cellSize), mazeOffset + ((j + 1) * this.cellSize))
+          ctx.stroke()
+        }
+        if (this.cells[i][j].wallTop) {
+          ctx.beginPath()
+          ctx.moveTo(mazeOffset + (i * this.cellSize), mazeOffset + (j * this.cellSize))
+          ctx.lineTo(mazeOffset + ((i + 1) * this.cellSize), mazeOffset + (j * this.cellSize))
+          ctx.stroke()
+        }
+      }
+    }
+
+    this.drawPlayer()
+  }
+
+  drawPlayer() {
+    ctx.fillStyle = player.color
+    ctx.fillRect(
+      mazeOffset + (player.column * this.cellSize) + 4,
+      mazeOffset + (player.row * this.cellSize) + 4,
+      this.cellSize - 8,
+      this.cellSize - 8
+    )
+  }
+
+  checkForVictory() {
+    if (player.column === this.columns - 1 && player.row === this.rows - 1) {
+      if (timer.value) {
+        clearInterval(timer.value)
+        timer.value = null
+      }
+      isPlaying.value = false
+      isTimerStarted.value = false
+      
+      const currentBest = bestTime.value
+      if (!currentBest || elapsedTime.value < currentBest) {
+        isNewRecord.value = true
+        gameStore.saveMazeRecord(currentDifficulty.value.toString(), elapsedTime.value)
+      } else {
+        isNewRecord.value = false
+      }
+      
+      showWin.value = true
     }
   }
-  
-  // 确保终点是路径
-  const end = size * size - 1
-  maze[end] = 0
-  
-  // 确保终点周围有路径
-  const endX = end % size
-  const endY = Math.floor(end / size)
-  
-  if (endX > 0) maze[end - 1] = 0
-  if (endY > 0) maze[end - size] = 0
-  
-  return maze
 }
 
-function getUnvisitedNeighbors(index, size, maze) {
-  const neighbors = []
-  const x = index % size
-  const y = Math.floor(index / size)
-  
-  // 上
-  if (y > 1 && maze[index - size * 2] === 1) {
-    neighbors.push(index - size * 2)
-  }
-  // 下
-  if (y < size - 2 && maze[index + size * 2] === 1) {
-    neighbors.push(index + size * 2)
-  }
-  // 左
-  if (x > 1 && maze[index - 2] === 1) {
-    neighbors.push(index - 2)
-  }
-  // 右
-  if (x < size - 2 && maze[index + 2] === 1) {
-    neighbors.push(index + 2)
-  }
-  
-  return neighbors
+function getRandomNumber(range) {
+  return Math.floor(Math.random() * range)
 }
 
-function startGame(difficulty) {
-  currentDifficulty.value = difficulty
-  gridSize.value = getGridSize(difficulty)
-  
-  // 生成迷宫
-  mazeCells.value = generateMaze(gridSize.value)
-  
-  // 起点和终点
-  startIndex.value = 0
-  endIndex.value = gridSize.value * gridSize.value - 1
-  
-  playerIndex.value = startIndex.value
-  visitedCells.value = [startIndex.value]
-  
+function handleDifficultyChange() {
+  startGame()
+}
+
+function startGame() {
+  switch (currentDifficulty.value) {
+    case 10:
+      cellSize = 36
+      break
+    case 15:
+      cellSize = 28
+      break
+    case 20:
+      cellSize = 22
+      break
+    case 30:
+      cellSize = 15
+      break
+  }
+
+  player = new Player()
+  maze = new Maze(currentDifficulty.value, currentDifficulty.value, cellSize)
+
+  if (timer.value) {
+    clearInterval(timer.value)
+    timer.value = null
+  }
+
   elapsedTime.value = 0
   isPlaying.value = true
+  isGameStarted.value = true
+  isTimerStarted.value = false
   showWin.value = false
   isNewRecord.value = false
-  
-  if (timer.value) clearInterval(timer.value)
+}
+
+function startTimer() {
+  if (isTimerStarted.value) return
+  isTimerStarted.value = true
   timer.value = setInterval(() => {
     elapsedTime.value++
   }, 1000)
-  
-  setTimeout(() => {
-    mazeContainer.value?.focus()
-  }, 100)
-}
-
-function canMove(index) {
-  return index >= 0 && index < gridSize.value * gridSize.value && mazeCells.value[index] === 0
-}
-
-function movePlayer(direction) {
-  if (!isPlaying.value) return
-  
-  const current = playerIndex.value
-  let newIndex = current
-  
-  if (direction === 'up') newIndex = current - gridSize.value
-  else if (direction === 'down') newIndex = current + gridSize.value
-  else if (direction === 'left') newIndex = current - 1
-  else if (direction === 'right') newIndex = current + 1
-  
-  if (canMove(newIndex)) {
-    playerIndex.value = newIndex
-    
-    // 添加到已访问路径
-    if (!visitedCells.value.includes(newIndex)) {
-      visitedCells.value.push(newIndex)
-    }
-    
-    if (newIndex === endIndex.value) {
-      winGame()
-    }
-  }
 }
 
 function handleKeydown(e) {
+  if (!isPlaying.value || !maze) return
+
   const keyMap = {
-    ArrowUp: 'up',
-    ArrowDown: 'down',
-    ArrowLeft: 'left',
-    ArrowRight: 'right',
-    w: 'up',
-    W: 'up',
-    s: 'down',
-    S: 'down',
-    a: 'left',
-    A: 'left',
-    d: 'right',
-    D: 'right'
+    37: 'left',
+    65: 'left',
+    38: 'up',
+    87: 'up',
+    39: 'right',
+    68: 'right',
+    40: 'down',
+    83: 'down'
   }
-  
-  const direction = keyMap[e.key]
+
+  const direction = keyMap[e.keyCode]
   if (direction) {
     e.preventDefault()
-    movePlayer(direction)
-  }
-}
 
-function winGame() {
-  isPlaying.value = false
-  clearInterval(timer.value)
-  
-  const currentBest = bestTime.value
-  if (!currentBest || elapsedTime.value < currentBest) {
-    isNewRecord.value = true
-    gameStore.saveMazeRecord(currentDifficulty.value, elapsedTime.value)
+    startTimer()
+
+    const cell = maze.cells[player.column][player.row]
+
+    if (direction === 'left' && !cell.wallLeft) {
+      player.column -= 1
+    } else if (direction === 'right' && !cell.wallRight) {
+      player.column += 1
+    } else if (direction === 'up' && !cell.wallTop) {
+      player.row -= 1
+    } else if (direction === 'down' && !cell.wallBottom) {
+      player.row += 1
+    }
+
+    maze.checkForVictory()
+    maze.drawMaze()
   }
-  
-  showWin.value = true
 }
 
 function formatTime(seconds) {
@@ -300,193 +404,116 @@ function formatTime(seconds) {
 }
 
 onMounted(() => {
-  startGame('easy')
+  ctx = canvas.value.getContext('2d')
+  document.addEventListener('keydown', handleKeydown)
+  startGame()
 })
 
 onUnmounted(() => {
-  if (timer.value) clearInterval(timer.value)
+  document.removeEventListener('keydown', handleKeydown)
+  if (timer.value) {
+    clearInterval(timer.value)
+  }
 })
 </script>
 
 <style lang="less" scoped>
-.maze-game {
+.maze-runner {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  align-items: center;
+  padding: 16px;
   background: var(--bg-color);
-}
 
-.game-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 20px;
-  background: var(--bg-color-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.game-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: var(--text-color);
-}
-
-.game-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  overflow: auto;
-}
-
-.difficulty-selector {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-.game-info {
-  display: flex;
-  gap: 30px;
-  margin-bottom: 15px;
-  font-size: 16px;
-}
-
-.timer {
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.best-time {
-  color: var(--text-color-muted);
-}
-
-.maze-container {
-  outline: none;
-  padding: 20px;
-  background: var(--bg-color-secondary);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.maze-instructions {
-  font-size: 14px;
-  color: var(--text-color-muted);
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-.maze-wrapper {
-  border: 2px solid #000;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.maze {
-  display: grid;
-  gap: 0;
-  background: #000;
-}
-
-.cell {
-  width: 100%;
-  height: 0;
-  padding-bottom: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  position: relative;
-  border: none !important;
-  outline: none !important;
-
-  > div {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+  .timer-container {
     display: flex;
     align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    margin-bottom: 10px;
+
+    .timer-label {
+      color: #666;
+    }
+
+    .timer-value {
+      font-family: monospace;
+      font-weight: bold;
+      color: var(--primary-color);
+      min-width: 80px;
+    }
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .best-time {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--text-color-muted);
+  }
+
+  .canvas-container {
+    display: flex;
     justify-content: center;
+    align-items: center;
+
+    canvas {
+      border: 3px solid #2c3e50;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
   }
 
-  &.wall {
-    background: #000;
+  .controls {
+    display: flex;
+    gap: 15px;
   }
 
-  &.path {
-    background: #fff;
+  .help-content {
+    h5 {
+      margin-top: 15px;
+      margin-bottom: 8px;
+      color: #2c3e50;
+      font-weight: bold;
+
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+    
+    p {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+    
+    .player-color {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+    
+    .end-color {
+      color: #dc143c;
+      font-weight: bold;
+    }
   }
 
-  &.start {
-    background: #fff;
-    position: relative;
+  .win-content {
+    text-align: center;
+    font-size: 18px;
+    
+    p {
+      margin: 15px 0;
+    }
+
+    .new-record {
+      color: #f56c6c;
+      font-weight: bold;
+      font-size: 20px;
+    }
   }
-
-  &.end {
-    background: #fff;
-    position: relative;
-  }
-
-  &.player {
-    background: #e3f2fd;
-    animation: pulse 1s infinite;
-  }
-
-  &.visited {
-    background: #fff3cd;
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-.player {
-  font-size: 16px;
-  z-index: 10;
-}
-
-.start-text {
-  color: red;
-  font-weight: bold;
-  font-size: 10px;
-}
-
-.end-text {
-  color: green;
-  font-weight: bold;
-  font-size: 10px;
-}
-
-.game-controls {
-  margin-top: 20px;
-  display: flex;
-  gap: 15px;
-}
-
-.help-content, .win-content {
-  text-align: center;
-
-  p {
-    margin: 10px 0;
-  }
-}
-
-.new-record {
-  color: #f56c6c;
-  font-weight: bold;
-  font-size: 18px;
 }
 </style>

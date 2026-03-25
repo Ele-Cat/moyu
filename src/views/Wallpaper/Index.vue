@@ -89,7 +89,7 @@ function handleFavorite(item) {
 
 .stop-btn {
   position: absolute;
-  top: 16px;
+  top: 56px;
   right: 20px;
 }
 </style>

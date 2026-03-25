@@ -1,11 +1,14 @@
 <template>
   <div class="tetris-game">
     <div class="game-header">
-      <h2>🧱 俄罗斯方块</h2>
       <div class="score-board">
         <div class="score-box">
           <div class="label">得分</div>
           <div class="value">{{ score }}</div>
+        </div>
+        <div class="score-box">
+          <div class="label">最高</div>
+          <div class="value">{{ bestScore }}</div>
         </div>
         <div class="score-box">
           <div class="label">等级</div>
@@ -16,7 +19,7 @@
           <div class="value">{{ lines }}</div>
         </div>
       </div>
-      <el-button type="primary" size="small" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
+      <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     <div class="game-area">
       <canvas ref="canvas" width="300" height="500"></canvas>
@@ -31,10 +34,14 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useGameStore } from '@/stores/modules/game'
+
+const gameStore = useGameStore()
 
 const canvas = ref(null)
 const nextCanvas = ref(null)
 const score = ref(0)
+const bestScore = ref(0)
 const level = ref(1)
 const lines = ref(0)
 const isRunning = ref(false)
@@ -263,6 +270,9 @@ function startGame() {
 function gameOver() {
   isRunning.value = false
   clearInterval(gameInterval)
+  if (score.value > bestScore.value) {
+    bestScore.value = score.value
+  }
   setTimeout(() => {
     alert('游戏结束！得分: ' + score.value)
   }, 100)
@@ -299,6 +309,7 @@ function handleKeydown(e) {
 onMounted(() => {
   ctx = canvas.value.getContext('2d')
   nextCtx = nextCanvas.value.getContext('2d')
+  bestScore.value = gameStore.tetrisBest
   initBoard()
   drawBoard()
   document.addEventListener('keydown', handleKeydown)
@@ -309,6 +320,7 @@ onUnmounted(() => {
     clearInterval(gameInterval)
   }
   document.removeEventListener('keydown', handleKeydown)
+  gameStore.saveTetrisScore(bestScore.value)
 })
 </script>
 

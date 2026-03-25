@@ -6,7 +6,7 @@
       <div class="main-layout">
         <FSidebar v-if="!isVideoWallpaper" />
 
-        <el-scrollbar class="content" :class="{ 'fullscreen': isVideoWallpaper }">
+        <div class="main-content" :class="{ 'fullscreen': isVideoWallpaper }">
           <router-view v-slot="{ Component }">
             <transition name="fade-slide" mode="out-in">
               <keep-alive :include="cachedViews">
@@ -14,7 +14,7 @@
               </keep-alive>
             </transition>
           </router-view>
-        </el-scrollbar>
+        </div>
       </div>
 
       <Settings v-model="appStore.showSettings" />
@@ -84,10 +84,10 @@ function initWallpaper() {
   overflow: hidden;
 }
 
-.content {
+.main-content {
   flex: 1;
   height: calc(100vh - var(--header-height));
-  overflow-x: hidden;
+  overflow: hidden;
   background: var(--bg-color);
   transition: background-color 0.3s;
 

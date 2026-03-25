@@ -1,31 +1,14 @@
 import { defineStore } from "pinia";
 
-const DIFFICULTY = {
-  easy: 'easy',
-  medium: 'medium',
-  hard: 'hard'
-}
-
-const STORAGE_KEY = 'maze_game_records'
-
-function loadRecords() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : {}
-  } catch {
-    return {}
-  }
-}
-
-function saveRecords(records) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
-}
-
 export const useGameStore = defineStore("game", {
   state: () => {
-    const records = loadRecords()
     return {
-      mazeRecords: records,
+      mazeRecords: {},
+      game2048Best: 0,
+      breakoutBest: 0,
+      snakeBest: 0,
+      tetrisBest: 0,
+      typingBest: null,
     };
   },
   getters: {
@@ -41,12 +24,44 @@ export const useGameStore = defineStore("game", {
       const current = this.mazeRecords[difficulty]
       if (!current || time < current) {
         this.mazeRecords[difficulty] = time
-        saveRecords(this.mazeRecords)
+      }
+    },
+    save2048Score(score) {
+      if (score > this.game2048Best) {
+        this.game2048Best = score
+      }
+    },
+    saveBreakoutScore(score) {
+      if (score > this.breakoutBest) {
+        this.breakoutBest = score
+      }
+    },
+    saveSnakeScore(score) {
+      if (score > this.snakeBest) {
+        this.snakeBest = score
+      }
+    },
+    saveTetrisScore(score) {
+      if (score > this.tetrisBest) {
+        this.tetrisBest = score
+      }
+    },
+    saveTypingScore(data) {
+      if (!this.typingBest || data.wpm > this.typingBest.wpm) {
+        this.typingBest = data
       }
     },
     resetMazeRecords() {
       this.mazeRecords = {}
-      saveRecords({})
     }
-  }
+  },
+  persist: {
+    enabled: true,
+    strategies: [
+      {
+        storage: localStorage,
+        paths: ['mazeRecords', 'game2048Best', 'breakoutBest', 'snakeBest', 'tetrisBest', 'typingBest'],
+      },
+    ],
+  },
 });

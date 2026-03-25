@@ -2,43 +2,41 @@
   <div class="news-page">
     <CategoryTabs v-model="currentCategory" :categories="categories" />
 
-    <div class="news-content">
-      <el-scrollbar>
-        <div v-if="loading" class="skeleton-container">
-          <el-skeleton animated v-for="i in 16" :key="i" class="skeleton-grid">
-            <template #template>
-              <div class="skeleton-item">
-                <el-skeleton-item v-for="j in 8" :key="j" class="skeleton-row" />
-              </div>
-            </template>
-          </el-skeleton>
-        </div>
-        
-
-        <div v-else class="hot-list">
-          <div
-            v-for="source in filteredSources"
-            :key="source.id"
-            class="source-card"
-          >
-            <div class="source-header">
-              <span class="source-name">{{ source.name }}</span>
-              <span class="source-category">{{ source.categoryLabel }}</span>
+    <el-scrollbar class="news-content">
+      <div v-if="loading" class="skeleton-container">
+        <el-skeleton animated v-for="i in 16" :key="i" class="skeleton-grid">
+          <template #template>
+            <div class="skeleton-item">
+              <el-skeleton-item v-for="j in 8" :key="j" class="skeleton-row" />
             </div>
-            <el-scrollbar class="source-list">
-              <div
-                v-for="item in source.items"
-                :key="item.url"
-                class="news-item"
-                @click="openNews(item)"
-              >
-                <div class="news-title" :title="item.title">{{ item.title }}</div>
-              </div>
-            </el-scrollbar>
+          </template>
+        </el-skeleton>
+      </div>
+      
+
+      <div v-else class="hot-list">
+        <div
+          v-for="source in filteredSources"
+          :key="source.id"
+          class="source-card"
+        >
+          <div class="source-header">
+            <span class="source-name">{{ source.name }}</span>
+            <span class="source-category">{{ source.categoryLabel }}</span>
           </div>
+          <el-scrollbar class="source-list">
+            <div
+              v-for="item in source.items"
+              :key="item.url"
+              class="news-item"
+              @click="openNews(item)"
+            >
+              <div class="news-title" :title="item.title">{{ item.title }}</div>
+            </div>
+          </el-scrollbar>
         </div>
-      </el-scrollbar>
-    </div>
+      </div>
+    </el-scrollbar>
   </div>
 </template>
 
@@ -156,12 +154,12 @@ onMounted(() => {
 
 <style lang="less" scoped>
 .news-page {
-  padding: 10px 20px;
+  padding: 10px 0 10px 20px;
 }
 
 .news-content {
   height: calc(100vh - 110px);
-  overflow: hidden;
+  padding-right: 20px;
 }
 
 .skeleton-container {

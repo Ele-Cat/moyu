@@ -1,7 +1,6 @@
 <template>
   <div class="typing-game">
     <div class="game-header">
-      <h2>⌨️ 打字练习</h2>
       <div class="score-board">
         <div class="score-box">
           <div class="label">得分</div>
@@ -12,11 +11,15 @@
           <div class="value">{{ speed }} WPM</div>
         </div>
         <div class="score-box">
+          <div class="label">最高</div>
+          <div class="value">{{ bestWpm }} WPM</div>
+        </div>
+        <div class="score-box">
           <div class="label">正确率</div>
           <div class="value">{{ accuracy }}%</div>
         </div>
       </div>
-      <el-button type="primary" size="small" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
+      <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     
     <div class="game-container" v-if="!isRunning && !currentWord">
@@ -63,6 +66,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useGameStore } from '@/stores/modules/game'
+
+const gameStore = useGameStore()
 
 const score = ref(0)
 const speed = ref(0)
@@ -71,6 +77,7 @@ const isRunning = ref(false)
 const inputValue = ref('')
 const inputRef = ref(null)
 const currentWord = ref('')
+const bestWpm = ref(0)
 
 const fallingWords = ref([])
 let wordId = 0
@@ -225,11 +232,17 @@ function startGame() {
 }
 
 onMounted(() => {
+  if (gameStore.typingBest) {
+    bestWpm.value = gameStore.typingBest.wpm
+  }
 })
 
 onUnmounted(() => {
   if (gameInterval) clearInterval(gameInterval)
   if (speedInterval) clearInterval(speedInterval)
+  if (speed.value > 0) {
+    gameStore.saveTypingScore({ wpm: speed.value, accuracy: accuracy.value })
+  }
 })
 </script>
 

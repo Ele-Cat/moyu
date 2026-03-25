@@ -1,10 +1,9 @@
 <template>
   <div class="breakout-game">
     <div class="game-header">
-      <h2>🎮 打砖块</h2>
-      <div class="score">得分: {{ score }}</div>
+      <div class="score">得分: {{ score }} | 最高: {{ bestScore }}</div>
       <div class="game-btns">
-        <el-button type="primary" size="small" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
+        <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
       </div>
     </div>
     <div class="game-container">
@@ -16,9 +15,13 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useGameStore } from '@/stores/modules/game'
+
+const gameStore = useGameStore()
 
 const canvas = ref(null)
 const score = ref(0)
+const bestScore = ref(0)
 const isRunning = ref(false)
 
 let ctx = null
@@ -43,13 +46,13 @@ const ball = {
 }
 
 const bricks = []
-const brickRowCount = 6
-const brickColumnCount = 8
-const brickWidth = 45
-const brickHeight = 18
+const brickRowCount = 5
+const brickColumnCount = 7
+const brickWidth = 46
+const brickHeight = 20
 const brickPadding = 5
 const brickOffsetTop = 40
-const brickOffsetLeft = 10
+const brickOffsetLeft = 14
 
 let rightPressed = false
 let leftPressed = false
@@ -133,11 +136,12 @@ function draw() {
   
   if (ball.y + ball.dy < ball.radius) {
     ball.dy = -ball.dy
-  } else if (ball.y + ball.dy > canvas.value.height - ball.radius - paddle.height) {
+  } else if (ball.y + ball.dy > paddle.y - ball.radius) {
     if (ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
       const hitPoint = (ball.x - paddle.x) / paddle.width
       ball.dx = (hitPoint - 0.5) * 8
       ball.dy = -ball.dy * 1.02
+      ball.y = paddle.y - ball.radius
     } else if (ball.y + ball.dy > canvas.value.height - ball.radius) {
       gameOver(false)
       return
@@ -179,7 +183,11 @@ function gameOver(win) {
   if (animationId) {
     cancelAnimationFrame(animationId)
   }
-  
+
+  if (score.value > bestScore.value) {
+    bestScore.value = score.value
+  }
+
   if (win) {
     alert('🎉 恭喜通关！得分: ' + score.value)
   }
@@ -203,6 +211,7 @@ function keyUpHandler(e) {
 
 onMounted(() => {
   ctx = canvas.value.getContext('2d')
+  bestScore.value = gameStore.breakoutBest
   initBricks()
   draw()
   document.addEventListener('keydown', keyDownHandler)
@@ -215,6 +224,7 @@ onUnmounted(() => {
   }
   document.removeEventListener('keydown', keyDownHandler)
   document.removeEventListener('keyup', keyUpHandler)
+  gameStore.saveBreakoutScore(bestScore.value)
 })
 </script>
 

@@ -1,9 +1,8 @@
 <template>
   <div class="snake-game">
     <div class="game-header">
-      <h2>🐍 贪吃蛇</h2>
-      <div class="score">得分: {{ score }}</div>
-      <el-button type="primary" size="small" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
+      <div class="score">得分: {{ score }} | 最高: {{ bestScore }}</div>
+      <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     <div class="game-container">
       <canvas ref="canvas" width="400" height="400"></canvas>
@@ -14,9 +13,13 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useGameStore } from '@/stores/modules/game'
+
+const gameStore = useGameStore()
 
 const canvas = ref(null)
 const score = ref(0)
+const bestScore = ref(0)
 const isRunning = ref(false)
 
 let ctx = null
@@ -169,6 +172,9 @@ function startGame() {
 function gameOver() {
   isRunning.value = false
   clearInterval(gameInterval)
+  if (score.value > bestScore.value) {
+    bestScore.value = score.value
+  }
   setTimeout(() => {
     alert('游戏结束！得分: ' + score.value)
   }, 100)
@@ -197,6 +203,7 @@ function handleKeydown(e) {
 
 onMounted(() => {
   ctx = canvas.value.getContext('2d')
+  bestScore.value = gameStore.snakeBest
   initGame()
   draw()
   document.addEventListener('keydown', handleKeydown)
@@ -207,6 +214,7 @@ onUnmounted(() => {
     clearInterval(gameInterval)
   }
   document.removeEventListener('keydown', handleKeydown)
+  gameStore.saveSnakeScore(bestScore.value)
 })
 </script>
 
