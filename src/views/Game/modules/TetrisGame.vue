@@ -22,7 +22,7 @@
       <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     <div class="game-area">
-      <canvas ref="canvas" width="300" height="500"></canvas>
+      <canvas ref="canvas" width="300" height="540"></canvas>
       <div class="next-piece">
         <div class="next-label">下一个</div>
         <canvas ref="nextCanvas" width="120" height="120"></canvas>
@@ -51,7 +51,7 @@ let nextCtx = null
 let gameInterval = null
 
 const COLS = 10
-const ROWS = 20
+const ROWS = 18
 const BLOCK_SIZE = 30
 
 const SHAPES = [

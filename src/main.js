@@ -8,10 +8,9 @@ import router from "./router";
 import "./assets/styles/variables.less";
 import "./assets/styles/global.less";
 import components from "./components/index.js";
+import { setupSecurityProtection } from "./utils/security";
 
-document.addEventListener('contextmenu', (e) => {
-  e.preventDefault()
-})
+setupSecurityProtection();
 
 const app = createApp(App);
 
