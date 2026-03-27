@@ -22,6 +22,7 @@ pub struct FetchOptions {
     method: String,
     headers: Option<std::collections::HashMap<String, String>>,
     body: Option<serde_json::Value>,
+    return_type: Option<String>,
 }
 
 /// HTTP 响应结构体
@@ -69,10 +70,20 @@ async fn fetch_api(options: FetchOptions) -> Result<FetchResponse, String> {
         .map_err(|e| format!("请求失败: {}", e))?;
 
     let status = response.status().as_u16();
-    let body: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| format!("解析响应失败: {}", e))?;
+    
+    let return_type = options.return_type.as_deref().unwrap_or("json");
+    let body = if return_type == "text" {
+        let text = response
+            .text()
+            .await
+            .map_err(|e| format!("获取响应文本失败: {}", e))?;
+        serde_json::Value::String(text)
+    } else {
+        response
+            .json()
+            .await
+            .map_err(|e| format!("解析响应失败: {}", e))?
+    };
 
     Ok(FetchResponse { status, body })
 }
