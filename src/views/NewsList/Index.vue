@@ -1,224 +1,372 @@
 <template>
   <div class="news-page">
     <CategoryTabs v-model="currentCategory" :categories="categories" />
-
-    <el-scrollbar class="news-content">
-      <div v-if="loading" class="skeleton-container">
-        <el-skeleton animated v-for="i in 16" :key="i" class="skeleton-grid">
-          <template #template>
-            <div class="skeleton-item">
-              <el-skeleton-item v-for="j in 8" :key="j" class="skeleton-row" />
+    
+    <div class="news-layout">
+      <div class="category-sidebar">
+        <el-scrollbar>
+          <draggable 
+            v-if="currentCategory === 'subscribe'"
+            :list="newsStore.subscriptions"
+            :animation="100"
+            item-key="id"
+            class="list-group source-list"
+            :forceFallback="true"
+            ghost-class="ghost"
+            :fallback-tolerance="8"
+            :delay="10"
+            handle=".drag-handle"
+            @end="onDragEnd"
+          >
+            <template #item="{ element }">
+              <div 
+                class="source-item"
+                :class="{ active: selectedSource?.id === element.id }"
+              >
+                <el-icon class="drag-handle" title="拖动排序"><Rank /></el-icon>
+                <span class="source-name" :title="element.name" @click="selectSource(element)">{{ element.name }}</span>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  link
+                  @click.stop="toggleSubscribe(element)"
+                  title="取消订阅"
+                >
+                  <el-icon><StarFilled /></el-icon>
+                </el-button>
+              </div>
+            </template>
+          </draggable>
+          
+          <template v-else>
+            <div 
+              v-for="source in filteredSources" 
+              :key="source.id"
+              class="source-item"
+              :class="{ active: selectedSource?.id === source.id }"
+              @click="selectSource(source)"
+            >
+              <span class="source-name" :title="source.name">{{ source.name }}</span>
+              <el-button 
+                type="danger" 
+                size="small" 
+                link
+                @click.stop="toggleSubscribe(source)"
+                :title="isSubscribed(source.id) ? '取消订阅' : '订阅'"
+              >
+                <el-icon><component :is="isSubscribed(source.id) ? StarFilled : Star" /></el-icon>
+              </el-button>
             </div>
           </template>
-        </el-skeleton>
+        </el-scrollbar>
       </div>
       
-
-      <div v-else class="hot-list">
-        <div
-          v-for="source in filteredSources"
-          :key="source.id"
-          class="source-card"
-        >
-          <div class="source-header">
-            <span class="source-name">{{ source.name }}</span>
-            <span class="source-category">{{ source.categoryLabel }}</span>
+      <div class="news-main">
+        <div v-if="loading" class="skeleton-container">
+          <el-skeleton animated v-for="i in 10" :key="i" :rows="3" />
+        </div>
+        
+        <el-scrollbar v-else-if="currentItems.length > 0" class="news-list">
+          <div
+            v-for="(item, index) in currentItems"
+            :key="index"
+            class="news-item"
+            @click="openNews(item)"
+          >
+            <div class="news-title" :title="item.title">{{ item.title }}</div>
+            <div v-if="item.hot" class="news-hot">{{ formatHot(item.hot) }}</div>
           </div>
-          <el-scrollbar class="source-list">
-            <div
-              v-for="item in source.items"
-              :key="item.url"
-              class="news-item"
-              @click="openNews(item)"
-            >
-              <div class="news-title" :title="item.title">{{ item.title }}</div>
-            </div>
-          </el-scrollbar>
+        </el-scrollbar>
+        
+        <div v-else class="no-data">
+          <div v-if="selectedSource">暂无数据</div>
+          <div v-else-if="currentCategory === 'subscribe'">暂无订阅，快去收藏一些热榜吧</div>
+          <div v-else>请选择一个热榜源</div>
         </div>
       </div>
-    </el-scrollbar>
+    </div>
   </div>
 </template>
 
 <script setup>
 defineOptions({ name: 'NewsList' })
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { get } from '@/hooks/useApi'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { ElMessage } from 'element-plus'
+import { Star, StarFilled, Rank } from '@element-plus/icons-vue'
+import draggable from 'vuedraggable'
 import CategoryTabs from '@/components/CategoryTabs/Index.vue'
+import { useNewsStore } from '@/stores/modules/news'
+
+const newsStore = useNewsStore()
 
 const categories = [
+  { category: '我的订阅', id: 'subscribe' },
   { category: '全部', id: 'all' },
-  { category: '社交', id: 'social' },
-  { category: '资讯', id: 'news' },
-  { category: '视频', id: 'video' },
-  { category: '财经', id: 'finance' },
   { category: '科技', id: 'tech' },
-  { category: '社区', id: 'community' },
-  { category: '国际', id: 'international' },
+  { category: '社交', id: 'social' },
+  { category: '视频', id: 'video' },
+  { category: '游戏', id: 'game' },
+  { category: '资讯', id: 'news' },
 ]
 
 const hotSources = [
-  { id: 'weibo', name: '微博', category: 'social', categoryLabel: '社交' },
-  { id: 'zhihu', name: '知乎热榜', category: 'social', categoryLabel: '社交' },
-  { id: 'hupu', name: '虎扑步行街', category: 'social', categoryLabel: '社交' },
-  { id: 'tieba', name: '贴吧热议', category: 'social', categoryLabel: '社交' },
-  { id: 'douban', name: '豆瓣电影', category: 'social', categoryLabel: '社交' },
-  { id: 'baidu', name: '百度热搜', category: 'news', categoryLabel: '资讯' },
-  { id: 'douyin', name: '抖音热搜', category: 'news', categoryLabel: '资讯' },
-  { id: 'toutiao', name: '今日头条', category: 'news', categoryLabel: '资讯' },
-  { id: 'thepaper', name: '澎湃新闻', category: 'news', categoryLabel: '资讯' },
-  { id: 'ifeng', name: '凤凰网', category: 'news', categoryLabel: '资讯' },
-  { id: 'tencent-hot', name: '腾讯新闻', category: 'news', categoryLabel: '资讯' },
-  { id: 'bilibili-hot-search', name: 'B站热搜', category: 'video', categoryLabel: '视频' },
-  { id: 'iqiyi-hot-ranklist', name: '爱奇艺热播', category: 'video', categoryLabel: '视频' },
-  { id: 'qqvideo-tv-hotsearch', name: '腾讯视频', category: 'video', categoryLabel: '视频' },
-  { id: 'cls-telegraph', name: '财联社电报', category: 'finance', categoryLabel: '财经' },
-  { id: 'cls-hot', name: '财联社热门', category: 'finance', categoryLabel: '财经' },
-  { id: 'wallstreetcn-news', name: '华尔街见闻', category: 'finance', categoryLabel: '财经' },
-  { id: 'jin10', name: '金十数据', category: 'finance', categoryLabel: '财经' },
-  { id: 'gelonghui', name: '格隆汇', category: 'finance', categoryLabel: '财经' },
-  { id: 'fastbull-express', name: 'FastBull', category: 'finance', categoryLabel: '财经' },
-  { id: 'mktnews-flash', name: 'MKTNews', category: 'finance', categoryLabel: '财经' },
-  { id: '36kr-quick', name: '36氪', category: 'finance', categoryLabel: '财经' },
-  { id: 'xueqiu-hotstock', name: '雪球热股', category: 'finance', categoryLabel: '财经' },
-  { id: 'ithome', name: 'IT之家', category: 'tech', categoryLabel: '科技' },
-  { id: 'juejin', name: '掘金热榜', category: 'tech', categoryLabel: '科技' },
-  { id: 'sspai', name: '少数派', category: 'tech', categoryLabel: '科技' },
-  { id: 'coolapk', name: '酷安热榜', category: 'tech', categoryLabel: '科技' },
-  { id: 'v2ex-share', name: 'V2EX', category: 'tech', categoryLabel: '科技' },
-  { id: 'chongbuluo-latest', name: '虫部落最新', category: 'tech', categoryLabel: '科技' },
-  { id: 'chongbuluo-hot', name: '虫部落热门', category: 'tech', categoryLabel: '科技' },
-  { id: 'nowcoder', name: '牛客', category: 'community', categoryLabel: '社区' },
-  { id: 'freebuf', name: 'FreeBuf', category: 'community', categoryLabel: '社区' },
-  { id: 'solidot', name: 'Solidot', category: 'community', categoryLabel: '社区' },
-  { id: 'pcbeta-windows11', name: '远景论坛', category: 'community', categoryLabel: '社区' },
-  { id: 'github-trending-today', name: 'GitHub', category: 'international', categoryLabel: '国际' },
-  { id: 'hackernews', name: 'Hacker News', category: 'international', categoryLabel: '国际' },
-  { id: 'producthunt', name: 'Product Hunt', category: 'international', categoryLabel: '国际' },
-  { id: 'steam', name: 'Steam', category: 'international', categoryLabel: '国际' },
-  { id: 'zaobao', name: '联合早报', category: 'international', categoryLabel: '国际' },
-  { id: 'cankaoxiaoxi', name: '参考消息', category: 'international', categoryLabel: '国际' },
-  { id: 'kaopu', name: '靠谱新闻', category: 'international', categoryLabel: '国际' },
+  { id: '知乎', name: '知乎', category: 'social', categoryLabel: '社交' },
+  { id: '36氪', name: '36氪', category: 'tech', categoryLabel: '科技' },
+  { id: '51CTO', name: '51CTO', category: 'tech', categoryLabel: '科技' },
+  { id: '吾爱破解', name: '吾爱破解', category: 'tech', categoryLabel: '科技' },
+  { id: 'AcFun', name: 'AcFun', category: 'video', categoryLabel: '视频' },
+  { id: '百度', name: '百度', category: 'news', categoryLabel: '资讯' },
+  { id: '哔哩哔哩', name: '哔哩哔哩', category: 'video', categoryLabel: '视频' },
+  { id: 'CSDN', name: 'CSDN', category: 'tech', categoryLabel: '科技' },
+  { id: '数字尾巴', name: '数字尾巴', category: 'social', categoryLabel: '社交' },
+  { id: '豆瓣讨论', name: '豆瓣讨论', category: 'social', categoryLabel: '社交' },
+  { id: '豆瓣电影', name: '豆瓣电影', category: 'social', categoryLabel: '社交' },
+  { id: '抖音', name: '抖音', category: 'video', categoryLabel: '视频' },
+  { id: '极客公园', name: '极客公园', category: 'tech', categoryLabel: '科技' },
+  { id: '原神', name: '原神', category: 'game', categoryLabel: '游戏' },
+  { id: '果壳', name: '果壳', category: 'social', categoryLabel: '社交' },
+  { id: 'HelloGitHub', name: 'HelloGitHub', category: 'tech', categoryLabel: '科技' },
+  { id: '历史上的今天', name: '历史上的今天', category: 'news', categoryLabel: '资讯' },
+  { id: '崩坏3', name: '崩坏3', category: 'game', categoryLabel: '游戏' },
+  { id: '虎扑', name: '虎扑', category: 'social', categoryLabel: '社交' },
+  { id: '虎嗅', name: '虎嗅', category: 'news', categoryLabel: '资讯' },
+  { id: '爱范儿', name: '爱范儿', category: 'tech', categoryLabel: '科技' },
+  { id: 'IT之家「喜加一」', name: 'IT之家「喜加一」', category: 'tech', categoryLabel: '科技' },
+  { id: 'IT之家', name: 'IT之家', category: 'tech', categoryLabel: '科技' },
+  { id: '简书', name: '简书', category: 'social', categoryLabel: '社交' },
+  { id: '稀土掘金', name: '稀土掘金', category: 'tech', categoryLabel: '科技' },  
+  { id: '英雄联盟', name: '英雄联盟', category: 'game', categoryLabel: '游戏' },
+  { id: '米游社 · 崩坏3', name: '米游社 · 崩坏3', category: 'game', categoryLabel: '游戏' },
+  { id: '网易新闻', name: '网易新闻', category: 'news', categoryLabel: '资讯' },
+  { id: '水木社区', name: '水木社区', category: 'social', categoryLabel: '社交' },
+  { id: 'NGA', name: 'NGA', category: 'game', categoryLabel: '游戏' },
+  { id: '腾讯新闻', name: '腾讯新闻', category: 'news', categoryLabel: '资讯' },
+  { id: '新浪新闻', name: '新浪新闻', category: 'news', categoryLabel: '资讯' },
+  { id: '新浪网', name: '新浪网', category: 'news', categoryLabel: '资讯' },
+  { id: '什么值得买', name: '什么值得买', category: 'social', categoryLabel: '社交' },
+  { id: '少数派', name: '少数派', category: 'tech', categoryLabel: '科技' },
+  { id: '崩坏：星穹铁道', name: '崩坏：星穹铁道', category: 'game', categoryLabel: '游戏' },
+  { id: '澎湃新闻', name: '澎湃新闻', category: 'news', categoryLabel: '资讯' },
+  { id: '百度贴吧', name: '百度贴吧', category: 'news', categoryLabel: '资讯' },
+  { id: '今日头条', name: '今日头条', category: 'news', categoryLabel: '资讯' },
+  { id: '中央气象台', name: '中央气象台', category: 'news', categoryLabel: '资讯' },
+  { id: '微博', name: '微博', category: 'social', categoryLabel: '社交' },
+  { id: '微信读书', name: '微信读书', category: 'social', categoryLabel: '社交' },
+  { id: '游研社', name: '游研社', category: 'game', categoryLabel: '游戏' },
+  { id: '知乎日报', name: '知乎日报', category: 'social', categoryLabel: '社交' },
 ]
 
-const sourceData = ref([])
+const sourceCache = ref({})
 const loading = ref(false)
 const currentCategory = ref('all')
+const selectedSource = ref(null)
 
 const filteredSources = computed(() => {
-  if (currentCategory.value === 'all') {
-    return sourceData.value
-  }
-  return sourceData.value.filter(s => s.category === currentCategory.value)
+  if (currentCategory.value === 'all') return hotSources
+  return hotSources.filter(s => s.category === currentCategory.value)
 })
 
-async function fetchSource(source) {
-  try {
-    const res = await get(`https://api.lolimi.cn/API/hot/entire?id=${source.id}`)
-    if (res && res.code === 200 && res.items) {
-      return {
-        ...source,
-        items: res.items.slice(0, 10)
-      }
+const currentItems = computed(() => {
+  if (!selectedSource.value) return []
+  return sourceCache.value[selectedSource.value.id] || []
+})
+
+function isSubscribed(sourceId) {
+  return newsStore.isSubscribed(sourceId)
+}
+
+function toggleSubscribe(source) {
+  if (isSubscribed(source.id)) {
+    newsStore.removeSubscription(source.id)
+    ElMessage.info(`已取消收藏 ${source.name}`)
+    if (currentCategory.value === 'subscribe' && selectedSource.value?.id === source.id) {
+      selectFirstSource()
     }
-  } catch (e) {
-    console.error(`获取 ${source.name} 失败:`, e)
-  }
-  return {
-    ...source,
-    items: []
+  } else {
+    newsStore.addSubscription(source)
+    ElMessage.success(`已收藏 ${source.name}`)
   }
 }
 
-async function refreshNews() {
+function selectSource(source) {
+  selectedSource.value = source
+  
+  if (!sourceCache.value[source.id]) {
+    loadSourceData(source)
+  }
+}
+
+async function loadSourceData(source) {
   loading.value = true
   try {
-    const promises = hotSources.map(source => fetchSource(source))
-    sourceData.value = await Promise.all(promises)
+    const res = await get(`https://api.pearktrue.cn/api/dailyhot?title=${source.id}`)
+    if (res && res.code === 200 && res.data) {
+      const items = Array.isArray(res.data) ? res.data : [res.data]
+      sourceCache.value[source.id] = items.slice(0, 20)
+    }
   } catch (e) {
-    console.error('获取热榜失败:', e)
+    console.error(`获取 ${source.name} 失败:`, e)
+    sourceCache.value[source.id] = []
   } finally {
     loading.value = false
   }
 }
 
-function openNews(item) {
-  openUrl(item.url)
+function selectFirstSource() {
+  let list = currentCategory.value === 'subscribe' 
+    ? newsStore.subscriptions
+    : filteredSources.value
+  
+  if (list.length > 0) {
+    const firstSource = list[0]
+    if (firstSource) {
+      selectSource(firstSource)
+    }
+  } else {
+    selectedSource.value = null
+  }
 }
 
-onMounted(() => {
-  refreshNews()
+function onDragEnd() {
+  ElMessage.success('收藏顺序已更新')
+}
+
+watch(currentCategory, (newCategory) => {
+  selectedSource.value = null
+  
+  selectFirstSource()
+}, {
+  immediate: true
 })
+
+onMounted(() => {
+  selectFirstSource()
+})
+
+function formatHot(value) {
+  if (!value) return ''
+  const num = Number(value)
+  if (isNaN(num)) return value
+  if (num >= 100000000) {
+    return (num / 100000000).toFixed(1) + '亿'
+  } else if (num >= 10000) {
+    return (num / 10000).toFixed(1) + '万'
+  }
+  return num.toString()
+}
+
+function openNews(item) {
+  if (item.url) {
+    openUrl(item.url)
+  } else if (item.hotUrl) {
+    openUrl(item.hotUrl)
+  }
+}
 </script>
 
 <style lang="less" scoped>
 .news-page {
   padding: 10px 0 10px 20px;
-}
-
-.news-content {
-  height: calc(100vh - 110px);
-  padding-right: 20px;
-}
-
-.skeleton-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.skeleton-grid {
+  height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
-  height: 240px;
 }
 
-.skeleton-item {
-  display: grid;
+.news-layout {
+  flex: 1;
+  display: flex;
   gap: 16px;
+  padding-right: 20px;
+  min-height: 0;
 }
 
-.hot-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.source-card {
+.category-sidebar {
+  width: 180px;
+  flex-shrink: 0;
   background: var(--bg-color-secondary);
-  border-radius: var(--border-radius);
   overflow: hidden;
 }
 
-.source-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 10px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
-  color: #fff;
-}
-
-.source-name {
-  font-weight: 500;
-}
-
-.source-category {
-  font-size: 12px;
-  opacity: 0.8;
-}
-
 .source-list {
-  max-height: 360px;
-  overflow-y: auto;
+  width: 100%;
+}
+
+.source-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  border-right: 3px solid transparent;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  
+  &:hover {
+    background: var(--hover-bg);
+  }
+  
+  &.active {
+    background: var(--hover-bg);
+    border-right-color: var(--primary-color);
+    
+    .source-name {
+      color: var(--primary-color);
+    }
+  }
+  
+  &.ghost {
+    opacity: 0.8;
+  }
+  
+  .drag-handle {
+    cursor: move;
+    color: var(--text-color-secondary);
+    font-size: 14px;
+    
+    &:hover {
+      color: var(--text-color);
+    }
+  }
+  
+  .source-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+}
+
+.news-main {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-color-secondary);
+  overflow: hidden;
+}
+
+.skeleton-container {
+  padding: 20px;
+}
+
+.news-list {
+  height: 100%;
+  padding: 0;
 }
 
 .news-item {
-  padding: 8px 10px;
+  padding: 12px 15px;
   border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 
   &:hover {
     background: var(--hover-bg);
@@ -230,22 +378,24 @@ onMounted(() => {
 }
 
 .news-title {
+  flex: 1;
   font-size: 14px;
   color: var(--text-color);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.news-meta {
-  display: flex;
-  justify-content: space-between;
+.news-hot {
+  flex-shrink: 0;
   font-size: 12px;
+  color: #ff6b6b;
+  font-weight: 500;
 }
 
-.hot-value {
-  color: #ff6b6b;
+.no-data {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-color-secondary);
 }
 </style>
