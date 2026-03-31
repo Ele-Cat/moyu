@@ -37,6 +37,7 @@ import Game2048 from './modules/Game2048.vue'
 import SnakeGame from './modules/SnakeGame.vue'
 import TetrisGame from './modules/TetrisGame.vue'
 import TypingGame from './modules/TypingGame.vue'
+import MemoryGame from './modules/MemoryGame.vue'
 
 defineOptions({ name: 'Game' })
 
@@ -84,6 +85,13 @@ const games = [
     icon: '⌨️',
     desc: '摸鱼打字，速度制胜',
     component: TypingGame
+  },
+  {
+    id: 'memory',
+    name: '记忆游戏',
+    icon: '🧠',
+    desc: '记住高亮方块位置',
+    component: MemoryGame
   }
 ]
 

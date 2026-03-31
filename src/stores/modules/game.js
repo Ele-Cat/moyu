@@ -9,6 +9,7 @@ export const useGameStore = defineStore("game", {
       snakeBest: 0,
       tetrisBest: 0,
       typingBest: null,
+      memoryBest: 0,
     };
   },
   getters: {
@@ -51,6 +52,11 @@ export const useGameStore = defineStore("game", {
         this.typingBest = data
       }
     },
+    saveMemoryScore(score) {
+      if (score > this.memoryBest) {
+        this.memoryBest = score
+      }
+    },
     resetMazeRecords() {
       this.mazeRecords = {}
     }
@@ -60,7 +66,7 @@ export const useGameStore = defineStore("game", {
     strategies: [
       {
         storage: localStorage,
-        paths: ['mazeRecords', 'game2048Best', 'breakoutBest', 'snakeBest', 'tetrisBest', 'typingBest'],
+        paths: ['mazeRecords', 'game2048Best', 'breakoutBest', 'snakeBest', 'tetrisBest', 'typingBest', 'memoryBest'],
       },
     ],
   },
