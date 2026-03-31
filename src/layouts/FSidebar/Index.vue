@@ -40,9 +40,9 @@ const currentRoute = computed(() => route.path)
 
 const navItems = [
   { path: '/dashboard', label: '首页', icon: '🏠' },
-  { path: '/novel', label: '看小说', icon: '📖' },
   { path: '/music', label: '听音乐', icon: '🎵' },
   { path: '/news', label: '刷热点', icon: '📰' },
+  // { path: '/novel', label: '看小说', icon: '📖' },
   { path: '/wallpaper', label: '换壁纸', icon: '🖼️' },
   { path: '/game', label: '玩游戏', icon: '🎮' },
   { path: '/tools', label: '小工具', icon: '🛠️' }

@@ -26,6 +26,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeMount } from 'vue'
+import { get } from '@/utils/http'
 import MediaGrid from './components/MediaGrid.vue'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
 
@@ -58,8 +59,7 @@ async function fetchCategories() {
   }
   
   try {
-    const res = await fetch('https://go.ytab.top/api/wallpaper_category')
-    const { data } = await res.json()
+    const { data } = await get('https://go.ytab.top/api/wallpaper_category')
     const fetchedCategories = data.filter(item => !!item.old_id).map(item => ({ ...item, id: item.old_id || item.id }))
     categories.value = [biyingCategory, ...fetchedCategories]
     wallpaperStore.setStaticCategories(fetchedCategories)
@@ -77,27 +77,26 @@ async function fetchWallpapers(categoryId, pageNo = 1) {
     } else {
       url = `https://go.ytab.top/api/wallpaper_list?cid=${categoryId}&page=${pageNo}&limit=16`
     }
-    const res = await fetch(url)
-    const {data} = await res.json()
+    const { data: res } = await get(url)
     
     if (categoryId === 'biying') {
-      wallpapers.value = data.data.map((item, index) => ({
+      wallpapers.value = res.data.map((item, index) => ({
         id: item.id,
         name: item.title,
         type: 'image',
         cover: `https://www4.bing.com/${item.url}`,
         url: `https://www4.bing.com/${item.url}`,
       }))
-      total.value = data.total || 0
+      total.value = res.total || 0
     } else {
-      wallpapers.value = data.list.map((item, index) => ({
+      wallpapers.value = res.list.map((item, index) => ({
         id: item.id || index,
         name: item.tag,
         type: 'image',
         cover: item.url,
         url: item.url,
       }))
-      total.value = data.total_count || 0
+      total.value = res.total_count || 0
     }
   } catch (e) {
     console.error('获取壁纸失败:', e)

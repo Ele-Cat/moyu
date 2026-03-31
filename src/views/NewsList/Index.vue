@@ -91,11 +91,11 @@
 <script setup>
 defineOptions({ name: 'NewsList' })
 import { ref, computed, watch, onMounted } from 'vue'
-import { get } from '@/hooks/useApi'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { ElMessage } from 'element-plus'
 import { Star, StarFilled, Rank } from '@element-plus/icons-vue'
 import draggable from 'vuedraggable'
+import { get } from '@/utils/http'
 import CategoryTabs from '@/components/CategoryTabs/Index.vue'
 import { useNewsStore } from '@/stores/modules/news'
 
@@ -239,10 +239,6 @@ watch(currentCategory, (newCategory) => {
   selectFirstSource()
 }, {
   immediate: true
-})
-
-onMounted(() => {
-  selectFirstSource()
 })
 
 function formatHot(value) {

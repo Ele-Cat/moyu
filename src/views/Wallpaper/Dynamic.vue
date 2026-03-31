@@ -49,6 +49,7 @@
 import { ref, onMounted } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { get } from '@/utils/http'
 import MediaGrid from './components/MediaGrid.vue'
 
 const activeTab = ref('online')
@@ -87,8 +88,7 @@ const loading = ref(false)
 async function fetchOnlineVideos(page = 1) {
   try {
     loading.value = true
-    const res = await fetch(`https://go.ytab.top/users/video_wallpaper_list?page=${page}&limit=16`)
-    const { data } = await res.json()
+    const { data } = await get(`https://go.ytab.top/users/video_wallpaper_list?page=${page}&limit=16`)
     
     onlineVideos.value = data.data.map(item => ({
       id: item.id,

@@ -36,6 +36,8 @@
         <div class="book-info">
           <div class="book-name">{{ book.bookName }}</div>
           <div class="book-author">{{ book.author }}</div>
+        {{ book.coverUrl }}
+
         </div>
       </div>
     </div>
@@ -49,6 +51,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { fetchUrl } from '@/utils/http'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
 import { buildSearchUrl, parseSearchResult, parseHeader } from '@/utils/legado'
 
@@ -76,26 +79,47 @@ async function searchBooks() {
 
   try {
     const source = currentSource.value
-    const url = buildSearchUrl(source, searchKeyword.value)
-    const headers = parseHeader(source.header)
+    console.log('source: ', source);
     
+    // 构建搜索配置（支持 POST 和 JS 脚本）
+    const searchConfig = buildSearchUrl(source, searchKeyword.value)
+    console.log('搜索配置:', searchConfig)
+    
+    const headers = parseHeader(source.header)
     headers['User-Agent'] = headers['User-Agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
-    const res = await invoke('fetch_api', {
+    // 根据配置构建请求
+    const requestOptions = {
+      method: searchConfig.method || 'GET',
+      headers: headers
+    }
+    
+    // 如果有 body，添加到请求中
+    if (searchConfig.body) {
+      requestOptions.body = searchConfig.body
+      headers['Content-Type'] = headers['Content-Type'] || 'application/x-www-form-urlencoded'
+    }
+    
+    // const res = await fetchUrl(searchConfig.url, requestOptions)
+    
+    // 使用后端 API 备选（如果前端 fetch 失败）
+    const {body: res} = await invoke('fetch_api', {
       options: {
-        url: url,
-        method: 'GET',
+        url: searchConfig.url,
+        method: searchConfig.method || 'GET',
         headers: headers,
+        body: searchConfig.body,
         return_type: 'text'
       }
     })
+    console.log('res:', res)
 
-    if (res.body && typeof res.body === 'string') {
+    if (res) {
       const ruleSearch = source.ruleSearch || {}
+      console.log('source: ', source);
       console.log('搜索规则:', ruleSearch)
-      console.log('返回HTML长度:', res.body.length)
       
-      const results = parseSearchResult(res.body, ruleSearch, source.bookSourceUrl)
+      const results = parseSearchResult(res, ruleSearch, source.bookSourceUrl)
       console.log('解析结果数量:', results.length)
       console.log('解析结果:', results)
       

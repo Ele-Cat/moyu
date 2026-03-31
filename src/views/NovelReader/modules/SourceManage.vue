@@ -5,9 +5,17 @@
       <button @click="exportSource">📤 导出书源</button>
     </div>
 
+    <div class="source-search">
+      <input
+        v-model="searchText"
+        placeholder="搜索书源..."
+        class="search-input"
+      />
+    </div>
+
     <div class="source-list">
       <div
-        v-for="source in sources"
+        v-for="source in filteredSources"
         :key="source.bookSourceUrl"
         class="source-item"
         :class="{ disabled: !source.enabled, active: currentSource?.bookSourceUrl === source.bookSourceUrl }"
@@ -39,9 +47,9 @@
       </div>
     </div>
 
-    <div v-if="sources.length === 0" class="empty-source">
+    <div v-if="filteredSources.length === 0" class="empty-source">
       <div class="empty-icon">📡</div>
-      <p>暂无书源</p>
+      <p>{{ searchText ? '未找到匹配书源' : '暂无书源' }}</p>
       <p class="tip">点击上方导入按钮导入书源</p>
       <p class="tip">书源为 JSON 格式，可从 Legado 导出</p>
     </div>
@@ -49,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readTextFile } from '@tauri-apps/plugin-fs'
@@ -60,6 +68,16 @@ const bookSourceStore = useBookSourceStore()
 
 const sources = computed(() => bookSourceStore.sources)
 const currentSource = computed(() => bookSourceStore.currentSource)
+const searchText = ref('')
+
+const filteredSources = computed(() => {
+  if (!searchText.value.trim()) return sources.value
+  const keyword = searchText.value.toLowerCase()
+  return sources.value.filter(s => 
+    s.bookSourceName?.toLowerCase().includes(keyword) || 
+    s.bookSourceUrl?.toLowerCase().includes(keyword)
+  )
+})
 
 function toggleSource(url) {
   bookSourceStore.toggleSource(url)
@@ -162,6 +180,24 @@ async function testSource(source) {
 
     &:hover {
       background: #5a6fd6;
+    }
+  }
+}
+
+.source-search {
+  margin-bottom: 15px;
+
+  .search-input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+
+    &:focus {
+      border-color: #667eea;
     }
   }
 }

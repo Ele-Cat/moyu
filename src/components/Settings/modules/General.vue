@@ -4,6 +4,7 @@
       <label>存储位置</label>
       <div class="storage-path">
         <el-input v-model="storagePath" placeholder="正在加载..." readonly />
+        <el-button @click="handleOpenFolder">打开</el-button>
         <el-button type="primary" @click="handleChoosePath">更改</el-button>
       </div>
       <p class="setting-tip">用于存储壁纸缓存、小说内容等数据</p>
@@ -28,6 +29,16 @@ onMounted(async () => {
     console.error('获取存储路径失败:', error)
   }
 })
+
+async function handleOpenFolder() {
+  if (storagePath.value) {
+    try {
+      await invoke('open_folder', { path: storagePath.value })
+    } catch (error) {
+      console.error('打开文件夹失败:', error)
+    }
+  }
+}
 
 async function handleChoosePath() {
   try {
@@ -63,6 +74,10 @@ async function handleChoosePath() {
 
 .storage-path {
   display: flex;
-  gap: 8px;
+  
+  .el-input {
+    flex: 1;
+    margin-right: 12px;
+  }
 }
 </style>

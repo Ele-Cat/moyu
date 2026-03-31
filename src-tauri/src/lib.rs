@@ -60,8 +60,41 @@ async fn fetch_api(options: FetchOptions) -> Result<FetchResponse, String> {
         request = request.header(key, value);
     }
 
+    // 判断 Content-Type 处理 body
+    let content_type = options.headers
+        .as_ref()
+        .and_then(|h| h.get("Content-Type").or_else(|| h.get("content-type")))
+        .cloned();
+
     if let Some(body) = options.body {
-        request = request.json(&body);
+        if let Some(ct) = &content_type {
+            if ct.contains("application/json") {
+                request = request.json(&body);
+            } else if ct.contains("application/x-www-form-urlencoded") {
+                // 支持字符串或 JSON 对象形式的 body
+                let body_str = match &body {
+                    serde_json::Value::String(s) => s.clone(),
+                    serde_json::Value::Object(map) => {
+                        map.iter()
+                            .map(|(k, v)| format!("{}={}", k, v.as_str().unwrap_or("")))
+                            .collect::<Vec<_>>()
+                            .join("&")
+                    }
+                    _ => body.to_string()
+                };
+                request = request.body(body_str);
+            } else {
+                request = request.body(body.to_string());
+            }
+        } else {
+            // 没有 Content-Type，判断 body 类型
+            if let serde_json::Value::String(s) = &body {
+                // 如果是字符串，直接发送
+                request = request.body(s.clone());
+            } else {
+                request = request.json(&body);
+            }
+        }
     }
 
     let response = request
@@ -160,6 +193,36 @@ async fn choose_folder(app: tauri::AppHandle) -> Result<Option<String>, String> 
         });
     
     rx.recv().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+/// 打开文件夹
+async fn open_folder(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+    
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    }
+    
+    Ok(())
 }
 
 #[tauri::command]
@@ -447,6 +510,7 @@ pub fn run() {
             get_storage_path,
             set_storage_path,
             choose_folder,
+            open_folder,
             scan_folder,
             read_novel_content,
             fetch_news,
