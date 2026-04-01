@@ -1,8 +1,7 @@
 <template>
   <div class="maze-runner">
-    <div class="timer-container">
-      <span class="timer-label">时间:</span>
-      <span class="timer-value">{{ formatTime(elapsedTime) }}</span>
+    <div class="game-info-container">
+      时间:<span>{{ formatTime(elapsedTime) }}</span>
     </div>
     
     <div class="controls-row">
@@ -24,50 +23,12 @@
     <div class="canvas-container">
       <canvas ref="canvas"></canvas>
     </div>
-    
-    <div class="controls">
-      <el-button type="info" @click="showHelp = true">帮助</el-button>
-    </div>
-    
-    <el-dialog v-model="showHelp" title="帮助" width="500px">
-      <div class="help-content">
-        <h5>游戏目标</h5>
-        <p>玩家需要找到走出迷宫的路径到达终点。</p>
-        
-        <h5>游戏说明</h5>
-        <p>玩家控制 <span class="player-color">绿色方块</span>，游戏开始时出现在左上角。终点是 <span class="end-color">红色方块</span>，位于右下角。</p>
-        
-        <h5>操作方式</h5>
-        <p>使用 <b>方向键</b> 或 <b>WASD</b> 键控制移动。</p>
-        
-        <h5>难度</h5>
-        <p>迷宫随机生成，共有4个难度级别：Easy（简单）、Medium（中等）、Hard（困难）、Very Hard（极难）</p>
-        
-        <h5>计时</h5>
-        <p>点击"开始游戏"按钮或第一次移动后开始计时。</p>
-      </div>
-      <template #footer>
-        <el-button type="danger" @click="showHelp = false">关闭</el-button>
-      </template>
-    </el-dialog>
-    
-    <el-dialog v-model="showWin" title="恭喜通关! 👑" width="400px">
-      <div class="win-content">
-        <p>难度: <b>{{ difficultyText }}</b></p>
-        <p>用时: <b>{{ formatTime(elapsedTime) }}</b></p>
-        <p v-if="isNewRecord" class="new-record">🎉 新纪录!</p>
-        <p v-else>最快记录: {{ formatTime(bestTime) }}</p>
-      </div>
-      <template #footer>
-        <el-button type="primary" @click="showWin = false; startGame()">再来一局</el-button>
-        <el-button @click="showWin = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { h, ref, computed, onMounted, onUnmounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { useGameStore } from '@/stores/modules/game'
 
 const gameStore = useGameStore()
@@ -79,8 +40,6 @@ const timer = ref(null)
 const isPlaying = ref(false)
 const isGameStarted = ref(false)
 const isTimerStarted = ref(false)
-const showHelp = ref(false)
-const showWin = ref(false)
 const isNewRecord = ref(false)
 
 let ctx = null
@@ -307,7 +266,21 @@ class Maze {
         isNewRecord.value = false
       }
       
-      showWin.value = true
+      ElMessageBox({
+        title: '恭喜通关! 👑',
+        center: true,
+        message: h('div', null, [
+          h('p', null, `难度: ${difficultyText.value}`),
+          h('p', null, `用时: ${formatTime(elapsedTime.value)}`),
+          h('p', null, isNewRecord.value ? `🎉 新纪录!` : `最快记录: ${formatTime(bestTime.value)}`),
+        ]),
+        showCancelButton: true,
+        cancelButtonText: '关闭',
+        confirmButtonText: '再来一局',
+        confirmButtonType: 'success',
+      }).then(() => {
+        startGame()
+      })
     }
   }
 }
@@ -348,7 +321,6 @@ function startGame() {
   isPlaying.value = true
   isGameStarted.value = true
   isTimerStarted.value = false
-  showWin.value = false
   isNewRecord.value = false
 }
 
@@ -425,25 +397,6 @@ onUnmounted(() => {
   padding: 16px;
   background: var(--bg-color);
 
-  .timer-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 24px;
-    margin-bottom: 10px;
-
-    .timer-label {
-      color: #666;
-    }
-
-    .timer-value {
-      font-family: monospace;
-      font-weight: bold;
-      color: var(--primary-color);
-      min-width: 80px;
-    }
-  }
-
   .controls-row {
     display: flex;
     gap: 10px;
@@ -465,54 +418,6 @@ onUnmounted(() => {
       border: 3px solid #2c3e50;
       border-radius: 4px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-  }
-
-  .controls {
-    display: flex;
-    gap: 15px;
-  }
-
-  .help-content {
-    h5 {
-      margin-top: 15px;
-      margin-bottom: 8px;
-      color: #2c3e50;
-      font-weight: bold;
-
-      &:first-child {
-        margin-top: 0;
-      }
-    }
-    
-    p {
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-    
-    .player-color {
-      color: #2e7d32;
-      font-weight: bold;
-    }
-    
-    .end-color {
-      color: #dc143c;
-      font-weight: bold;
-    }
-  }
-
-  .win-content {
-    text-align: center;
-    font-size: 18px;
-    
-    p {
-      margin: 15px 0;
-    }
-
-    .new-record {
-      color: #f56c6c;
-      font-weight: bold;
-      font-size: 20px;
     }
   }
 }

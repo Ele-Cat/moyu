@@ -1,7 +1,7 @@
 <template>
   <div class="game-page">
-    <div class="game-list" v-if="!currentGame">
-      <div class="game-grid">
+    <el-scrollbar v-if="!currentGame">
+      <div class="game-list">
         <div 
           v-for="game in games" 
           :key="game.id"
@@ -13,35 +13,44 @@
           <div class="game-desc">{{ game.desc }}</div>
         </div>
       </div>
-    </div>
+    </el-scrollbar>
 
     <template v-else>
-      <el-page-header class="game-header" :icon="ArrowLeft" @click="goBack">
+      <el-page-header class="game-header" :icon="ArrowLeft" @back="goBack">
         <template #content>
           <span class="text-large font-600 mr-3"> {{ currentGame.name }} </span>
+        </template>
+        <template #extra>
+          <el-button type="primary" size="small" :icon="QuestionFilled" circle @click="showHelp = true" />
         </template>
       </el-page-header>
       <el-scrollbar class="game-content">
         <component :is="currentGame.component" />
       </el-scrollbar>
     </template>
+
+    <el-dialog v-model="showHelp" v-if="currentGame" :title="`${currentGame.name}`" width="500px">
+      <div class="help-content" v-if="currentGame">
+        <div v-html="currentGame.help"></div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import MazeGame from './modules/MazeGame.vue'
 import BreakoutGame from './modules/BreakoutGame.vue'
 import Game2048 from './modules/Game2048.vue'
 import SnakeGame from './modules/SnakeGame.vue'
 import TetrisGame from './modules/TetrisGame.vue'
-import TypingGame from './modules/TypingGame.vue'
 import MemoryGame from './modules/MemoryGame.vue'
 
 defineOptions({ name: 'Game' })
 
 const currentGame = ref(null)
+const showHelp = ref(false)
 
 const games = [
   {
@@ -49,6 +58,7 @@ const games = [
     name: '迷宫小游戏',
     icon: '🎮',
     desc: '挑战迷宫，寻找出口',
+    help: `<p>- 使用 <b>方向键</b> 或 <b>WASD</b> 控制角色移动。</p><p>- 玩家控制 <span style="color: #2e7d32;">绿色方块</span>，终点是 <span style="color: #dc143c;">红色方块</span></p>`,
     component: MazeGame
   },
   {
@@ -56,6 +66,7 @@ const games = [
     name: '打砖块',
     icon: '🧱',
     desc: '经典弹球，回忆童年',
+    help: '← → 或 A D 控制挡板',
     component: BreakoutGame
   },
   {
@@ -63,6 +74,7 @@ const games = [
     name: '2048',
     icon: '🔢',
     desc: '数字合并，极其耐玩',
+    help: '↑ ↓ ← → 或 WASD 控制移动',
     component: Game2048
   },
   {
@@ -70,6 +82,7 @@ const games = [
     name: '贪吃蛇',
     icon: '🐍',
     desc: '经典贪吃蛇',
+    help: '↑ ↓ ← → 控制方向',
     component: SnakeGame
   },
   {
@@ -77,20 +90,15 @@ const games = [
     name: '俄罗斯方块',
     icon: '🧱',
     desc: '方块消除，益智游戏',
+    help: '← → 控制移动 | ↑ 旋转 | ↓ 加速',
     component: TetrisGame
-  },
-  {
-    id: 'typing',
-    name: '打字练习',
-    icon: '⌨️',
-    desc: '摸鱼打字，速度制胜',
-    component: TypingGame
   },
   {
     id: 'memory',
     name: '记忆游戏',
     icon: '🧠',
     desc: '记住高亮方块位置',
+    help: '游戏开始后，方块会随机高亮显示，记住这些位置后高亮会消失。点击正确的方块进入下一关。共有 3 次错误机会，错误 3 次游戏结束。方块数量和难度会逐渐增加。',
     component: MemoryGame
   }
 ]
@@ -112,9 +120,6 @@ function goBack() {
 
   .game-list {
     padding: 20px;
-  }
-
-  .game-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 16px;
@@ -161,8 +166,14 @@ function goBack() {
   }
 
   .game-content {
-    height: calc(100vh - 88px);
+    height: calc(100vh - 90px);
     padding-right: 20px;
+  }
+
+  .help-content {
+    color: var(--text-color);
+    line-height: 2;
+    font-size: 14px;
   }
 }
 </style>

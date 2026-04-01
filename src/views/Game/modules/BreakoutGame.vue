@@ -1,20 +1,18 @@
 <template>
   <div class="breakout-game">
-    <div class="game-header">
-      <div class="score">得分: {{ score }} | 最高: {{ bestScore }}</div>
-      <div class="game-btns">
-        <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
-      </div>
+    <div class="game-info-container">
+      <div>得分: <span>{{ score }}</span> | 最高: <span>{{ bestScore }}</span></div>
+      <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     <div class="game-container">
       <canvas ref="canvas" width="400" height="500"></canvas>
     </div>
-    <div class="tips">← → 或 A D 控制挡板</div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { h, ref, onMounted, onUnmounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { useGameStore } from '@/stores/modules/game'
 
 const gameStore = useGameStore()
@@ -46,11 +44,11 @@ const ball = {
 }
 
 const bricks = []
-const brickRowCount = 5
+const brickRowCount = 6
 const brickColumnCount = 7
-const brickWidth = 46
+const brickWidth = 50
 const brickHeight = 20
-const brickPadding = 5
+const brickPadding = 4
 const brickOffsetTop = 40
 const brickOffsetLeft = 14
 
@@ -188,9 +186,21 @@ function gameOver(win) {
     bestScore.value = score.value
   }
 
-  if (win) {
-    alert('🎉 恭喜通关！得分: ' + score.value)
-  }
+  ElMessageBox({
+    title: win ? '恭喜通关! 👑' : '游戏结束',
+    center: true,
+    customStyle: 'width: 300px;',
+    showClose: false,
+    message: h('div', null, [
+      h('p', null, win ? `得分: ${score.value}` : ''),
+    ]),
+    showCancelButton: true,
+    cancelButtonText: '关闭',
+    confirmButtonText: '再来一局',
+    confirmButtonType: 'success',
+  }).then(() => {
+    startGame()
+  })
 }
 
 function keyDownHandler(e) {
@@ -250,9 +260,11 @@ onUnmounted(() => {
 }
 
 .score {
-  font-size: 20px;
-  font-weight: bold;
-  color: #ffa502;
+  font-size: 24px;
+  span {
+    font-weight: bold;
+    color: var(--primary-color);
+  }
 }
 
 .game-container {
@@ -264,11 +276,5 @@ onUnmounted(() => {
 canvas {
   display: block;
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-}
-
-.tips {
-  margin-top: 15px;
-  color: var(--text-color-secondary);
-  font-size: 14px;
 }
 </style>

@@ -1,13 +1,8 @@
 <template>
   <div class="memory-game">
-    <div class="game-header">
-      <h2>记忆游戏</h2>
-      <div class="game-info">
-        <span>关卡: {{ level }}</span>
-        <span>错误: {{ errorCount }}/3</span>
-        <span>得分: {{ score }}</span>
-        <span>最高: {{ gameStore.memoryBest }}</span>
-      </div>
+    <div class="game-info-container">
+      <div>关卡: <span>{{ level }}</span> | 错误: <span>{{ errorCount }}/3</span> | 得分: <span>{{ score }}</span> | 最高: <span>{{ gameStore.memoryBest }}</span></div>
+      <el-button type="primary" @click="startGame">开始游戏</el-button>
     </div>
 
     <div class="game-container" :class="{ 'game-over': gameOver, 'playing': gameState === 'playing' }">
@@ -58,10 +53,6 @@
       <div v-if="gameState === 'success'" class="overlay">
         <div class="message success">正确！进入下一关</div>
       </div>
-    </div>
-
-    <div class="game-controls">
-      <button @click="startGame">重新开始</button>
     </div>
   </div>
 </template>
@@ -207,30 +198,6 @@ onUnmounted(() => {
   background: var(--bg-color);
 }
 
-.game-header {
-  text-align: center;
-  color: var(--text-color);
-  margin-bottom: 20px;
-
-  h2 {
-    margin: 0 0 10px 0;
-    font-size: 28px;
-  }
-
-  .game-info {
-    display: flex;
-    gap: 20px;
-    font-size: 16px;
-
-    span {
-      background: var(--bg-color-secondary);
-      padding: 5px 15px;
-      border-radius: 20px;
-      border: 1px solid var(--border-color);
-    }
-  }
-}
-
 .game-container {
   position: relative;
   background: var(--bg-color-secondary);
@@ -371,17 +338,21 @@ onUnmounted(() => {
   padding: 15px 40px;
   font-size: 20px;
   font-weight: bold;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-color);
   color: #fff;
   border: none;
-  border-radius: 30px;
+  border-radius: var(--border-radius);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow);
 
   &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    background: var(--primary-color-end);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 }
 
@@ -391,15 +362,20 @@ onUnmounted(() => {
   button {
     padding: 10px 30px;
     font-size: 16px;
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--primary-color);
     color: #fff;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    border-radius: 25px;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
     cursor: pointer;
     transition: all 0.3s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.5);
+      background: var(--primary-color-end);
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
   }
 }

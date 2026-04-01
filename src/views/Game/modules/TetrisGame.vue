@@ -1,24 +1,7 @@
 <template>
   <div class="tetris-game">
-    <div class="game-header">
-      <div class="score-board">
-        <div class="score-box">
-          <div class="label">得分</div>
-          <div class="value">{{ score }}</div>
-        </div>
-        <div class="score-box">
-          <div class="label">最高</div>
-          <div class="value">{{ bestScore }}</div>
-        </div>
-        <div class="score-box">
-          <div class="label">等级</div>
-          <div class="value">{{ level }}</div>
-        </div>
-        <div class="score-box">
-          <div class="label">行数</div>
-          <div class="value">{{ lines }}</div>
-        </div>
-      </div>
+    <div class="game-info-container">
+      <div>得分: <span>{{ score }}</span> | 最高: <span>{{ bestScore }}</span> | 等级: <span>{{ level }}</span> | 行数: <span>{{ lines }}</span></div>
       <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     <div class="game-area">
@@ -28,12 +11,12 @@
         <canvas ref="nextCanvas" width="120" height="120"></canvas>
       </div>
     </div>
-    <div class="tips">← → 控制移动 | ↑ 旋转 | ↓ 加速</div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { useGameStore } from '@/stores/modules/game'
 
 const gameStore = useGameStore()
@@ -182,6 +165,20 @@ function isValid(piece, boardToCheck = board.value) {
   return true
 }
 
+function dropPiece() {
+  while (true) {
+    const moved = { ...currentPiece.value, y: currentPiece.value.y + 1 }
+    if (isValid(moved)) {
+      currentPiece.value = moved
+    } else {
+      break
+    }
+  }
+  drawBoard()
+  drawPiece()
+  lockPiece()
+}
+
 function lockPiece() {
   const { shape, x, y, type } = currentPiece.value
   for (let r = 0; r < shape.length; r++) {
@@ -273,9 +270,13 @@ function gameOver() {
   if (score.value > bestScore.value) {
     bestScore.value = score.value
   }
-  setTimeout(() => {
-    alert('游戏结束！得分: ' + score.value)
-  }, 100)
+  ElMessageBox.confirm('游戏结束！得分: ' + score.value, '提示', {
+    confirmButtonText: '重新开始',
+    cancelButtonText: '关闭',
+    type: 'warning'
+  }).then(() => {
+    startGame()
+  })
 }
 
 function handleKeydown(e) {
@@ -296,6 +297,10 @@ function handleKeydown(e) {
     case 'ArrowUp':
       moved = rotatePiece(currentPiece.value)
       break
+    case ' ':
+      e.preventDefault()
+      dropPiece()
+      return
   }
   
   if (moved && isValid(moved)) {
@@ -331,20 +336,6 @@ onUnmounted(() => {
   align-items: center;
   padding: 20px;
   height: 100%;
-}
-
-.game-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-  justify-content: center;
-
-  h2 {
-    margin: 0;
-    color: var(--text-color);
-  }
 }
 
 .score-board {

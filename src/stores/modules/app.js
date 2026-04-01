@@ -2,46 +2,52 @@ import { defineStore } from "pinia";
 
 const themes = [
   {
-    id: 'default',
-    name: '默认紫',
-    isDark: false,
+    id: 'purple',
+    name: '浪漫紫',
     primaryColor: '#667eea',
     primaryColorEnd: '#764ba2',
   },
   {
     id: 'blue',
     name: '海洋蓝',
-    isDark: false,
-    primaryColor: '#1e3c72',
-    primaryColorEnd: '#2a5298',
+    primaryColor: '#00b8f9',
+    primaryColorEnd: '#0166eb',
   },
   {
     id: 'green',
     name: '清新绿',
-    isDark: false,
-    primaryColor: '#11998e',
-    primaryColorEnd: '#38ef7d',
+    primaryColor: '#39b54a',
+    primaryColorEnd: '#8dc63f',
   },
   {
     id: 'pink',
     name: '甜蜜粉',
-    isDark: false,
     primaryColor: '#ec008c',
-    primaryColorEnd: '#fc6767',
+    primaryColorEnd: '#6739b6',
   },
   {
-    id: 'dark',
-    name: '暗夜紫',
-    isDark: true,
-    primaryColor: '#667eea',
-    primaryColorEnd: '#764ba2',
+    id: 'cyan',
+    name: '潮流青',
+    primaryColor: '#06edfe',
+    primaryColorEnd: '#48b2fe',
   },
   {
-    id: 'darkBlue',
-    name: '暗夜蓝',
-    isDark: true,
-    primaryColor: '#1e3c72',
-    primaryColorEnd: '#2a5298',
+    id: 'purple2',
+    name: '梦幻紫',
+    primaryColor: '#9000ff',
+    primaryColorEnd: '#5e00ff',
+  },
+  {
+    id: 'orange',
+    name: '活力橙',
+    primaryColor: '#ff9700',
+    primaryColorEnd: '#ed1c24',
+  },
+  {
+    id: 'red',
+    name: '热情红',
+    primaryColor: '#f43f3b',
+    primaryColorEnd: '#ec008c',
   },
 ];
 
@@ -52,7 +58,7 @@ export const useAppStore = defineStore("app", {
       isDark: false,
       bossKeyEnabled: true,
       showSettings: false,
-      currentThemeId: 'default',
+      currentThemeId: 'purple',
       themes,
       storagePath: '',
     };
@@ -71,12 +77,23 @@ export const useAppStore = defineStore("app", {
     
     toggleTheme() {
       this.isDark = !this.isDark;
+      this.applyDarkMode(this.isDark);
     },
     
     setDark(value) {
       this.isDark = value;
+      this.applyDarkMode(value);
       const theme = this.currentTheme;
       this.applyElementPlusTheme(theme.primaryColor);
+    },
+
+    applyDarkMode(isDark) {
+      const root = document.documentElement;
+      if (isDark) {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
     },
 
     setStoragePath(path) {
@@ -87,7 +104,6 @@ export const useAppStore = defineStore("app", {
       const theme = this.themes.find(t => t.id === themeId);
       if (theme) {
         this.currentThemeId = themeId;
-        this.isDark = theme.isDark;
         this.applyTheme(theme);
       }
     },
@@ -132,6 +148,7 @@ export const useAppStore = defineStore("app", {
     initTheme() {
       const theme = this.currentTheme;
       this.applyTheme(theme);
+      this.applyDarkMode(this.isDark);
     },
     
     toggleSettings() {

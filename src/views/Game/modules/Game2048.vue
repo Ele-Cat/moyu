@@ -1,16 +1,7 @@
 <template>
   <div class="game2048">
-    <div class="game-header">
-      <div class="score-board">
-        <div class="score-box">
-          <div class="label">得分</div>
-          <div class="value">{{ score }}</div>
-        </div>
-        <div class="score-box">
-          <div class="label">最高</div>
-          <div class="value">{{ bestScore }}</div>
-        </div>
-      </div>
+    <div class="game-info-container">
+      <div>得分: <span>{{ score }}</span> | 最高: <span>{{ bestScore }}</span></div>
       <el-button type="primary" @click="initGame">新游戏</el-button>
     </div>
     <div class="game-container" @keydown="handleKeydown" tabindex="0" ref="gameContainer">
@@ -31,13 +22,13 @@
         </div>
       </div>
     </div>
-    <div class="tips">↑ ↓ ← → 或 WASD 控制移动</div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from '@/stores/modules/game'
+import { ElMessageBox } from 'element-plus'
 
 const gameStore = useGameStore()
 
@@ -202,9 +193,13 @@ function checkGameOver() {
     }
   }
 
-  setTimeout(() => {
-    alert('游戏结束！得分: ' + score.value)
-  }, 300)
+  ElMessageBox.confirm('游戏结束！得分: ' + score.value, '提示', {
+    confirmButtonText: '重新开始',
+    cancelButtonText: '关闭',
+    type: 'warning'
+  }).then(() => {
+    initGame()
+  })
 }
 
 function handleKeydown(e) {
@@ -232,42 +227,6 @@ onUnmounted(() => {
   align-items: center;
   padding: 20px;
   height: 100%;
-}
-
-.game-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 15px;
-
-  h2 {
-    margin: 0;
-    color: var(--text-color);
-  }
-}
-
-.score-board {
-  display: flex;
-  gap: 10px;
-}
-
-.score-box {
-  background: #bbada0;
-  border-radius: 6px;
-  padding: 5px 15px;
-  text-align: center;
-  min-width: 60px;
-
-  .label {
-    font-size: 12px;
-    color: #eee4da;
-  }
-
-  .value {
-    font-size: 20px;
-    font-weight: bold;
-    color: #fff;
-  }
 }
 
 .game-container {
@@ -326,11 +285,5 @@ onUnmounted(() => {
   &-512 { background: #edc850; color: #f9f6f2; font-size: 32px; }
   &-1024 { background: #edc53f; color: #f9f6f2; font-size: 24px; }
   &-2048 { background: #edc22e; color: #f9f6f2; font-size: 24px; }
-}
-
-.tips {
-  margin-top: 15px;
-  color: var(--text-color-secondary);
-  font-size: 14px;
 }
 </style>

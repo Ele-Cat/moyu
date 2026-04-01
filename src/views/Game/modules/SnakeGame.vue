@@ -1,18 +1,18 @@
 <template>
   <div class="snake-game">
-    <div class="game-header">
-      <div class="score">得分: {{ score }} | 最高: {{ bestScore }}</div>
+    <div class="game-info-container">
+      <div>得分: <span>{{ score }}</span> | 最高: <span>{{ bestScore }}</span></div>
       <el-button type="primary" @click="startGame">{{ isRunning ? '重新开始' : '开始游戏' }}</el-button>
     </div>
     <div class="game-container">
       <canvas ref="canvas" width="400" height="400"></canvas>
     </div>
-    <div class="tips">↑ ↓ ← → 控制方向</div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { useGameStore } from '@/stores/modules/game'
 
 const gameStore = useGameStore()
@@ -175,9 +175,14 @@ function gameOver() {
   if (score.value > bestScore.value) {
     bestScore.value = score.value
   }
-  setTimeout(() => {
-    alert('游戏结束！得分: ' + score.value)
-  }, 100)
+  
+  ElMessageBox.confirm('游戏结束！得分: ' + score.value, '提示', {
+    confirmButtonText: '重新开始',
+    cancelButtonText: '关闭',
+    type: 'warning'
+  }).then(() => {
+    startGame()
+  })
 }
 
 function handleKeydown(e) {
@@ -227,24 +232,6 @@ onUnmounted(() => {
   height: 100%;
 }
 
-.game-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 15px;
-
-  h2 {
-    margin: 0;
-    color: var(--text-color);
-  }
-}
-
-.score {
-  font-size: 20px;
-  font-weight: bold;
-  color: #ffa502;
-}
-
 .game-container {
   border: 3px solid #333;
   border-radius: 8px;
@@ -253,11 +240,5 @@ onUnmounted(() => {
 
 canvas {
   display: block;
-}
-
-.tips {
-  margin-top: 15px;
-  color: var(--text-color-secondary);
-  font-size: 14px;
 }
 </style>
