@@ -53,13 +53,13 @@ import { ref, computed } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { fetchUrl } from '@/utils/http'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
-import { buildSearchUrl, parseSearchResult, parseHeader } from '@/utils/legado'
+import { buildSearchUrl, parseSearchResult, parseHeader } from '@/views/NovelReader/utils'
 
 const emit = defineEmits(['select-book', 'change-tab'])
 
 const bookSourceStore = useBookSourceStore()
 
-const searchKeyword = ref('')
+const searchKeyword = ref('明朝')
 const searching = ref(false)
 const searched = ref(false)
 const searchResults = ref([])

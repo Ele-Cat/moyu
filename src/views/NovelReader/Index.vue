@@ -155,14 +155,14 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
-import { buildSearchUrl, parseSearchResult, parseHeader, buildCatalogUrl, parseCatalog, buildContentUrl, parseContent } from '@/utils/legado'
+import { buildSearchUrl, parseSearchResult, parseHeader, buildCatalogUrl, parseCatalog, buildContentUrl, parseContent } from '@/views/NovelReader/utils'
 import Bookshelf from './modules/Bookshelf.vue'
 import Search from './modules/Search.vue'
 import SourceManage from './modules/SourceManage.vue'
 
 const bookSourceStore = useBookSourceStore()
 
-const activeTab = ref('bookshelf')
+const activeTab = ref('search')
 const showBookDetail = ref(false)
 const showSwitchSource = ref(false)
 const currentBook = ref(null)
