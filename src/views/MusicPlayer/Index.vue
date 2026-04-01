@@ -92,7 +92,7 @@ const currentTime = ref(0)
 const duration = ref(0)
 const playMode = ref('sequence')
 
-const audioRef = ref<HTMLAudioElement | null>(null)
+const audioRef = ref(null)
 
 async function selectFolder() {
   try {

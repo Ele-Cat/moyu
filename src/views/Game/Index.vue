@@ -20,7 +20,7 @@
         <template #content>
           <span class="text-large font-600 mr-3"> {{ currentGame.name }} </span>
         </template>
-        <template #extra>
+        <template #extra v-if="currentGame.help">
           <el-button type="primary" size="small" :icon="QuestionFilled" circle @click="showHelp = true" />
         </template>
       </el-page-header>
