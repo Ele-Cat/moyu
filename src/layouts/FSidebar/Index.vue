@@ -12,11 +12,6 @@
         <span class="nav-text" v-if="!appStore.sidebarCollapsed">{{ item.label }}</span>
       </div>
     </nav>
-    <div class="sidebar-footer">
-      <button class="settings-btn" @click="appStore.showSettings = true">
-        ⚙️ <span v-if="!appStore.sidebarCollapsed">设置</span>
-      </button>
-    </div>
     <button class="toggle-btn" @click="appStore.toggleSidebar">
       <img v-if="appStore.sidebarCollapsed" src="@/assets/svg/right-arrow.svg" alt="expand" class="icon" />
       <img v-else src="@/assets/svg/left-arrow.svg" alt="collapse" class="icon" />
@@ -114,34 +109,6 @@ function goTo(path) {
   font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
-}
-
-.sidebar-footer {
-  padding: 15px;
-  border-top: 1px solid var(--border-color);
-}
-
-.settings-btn {
-  width: 100%;
-  padding: 10px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &:hover {
-    opacity: 0.9;
-  }
-}
-
-.sidebar.collapsed .settings-btn {
-  padding: 10px;
 }
 
 .toggle-btn {

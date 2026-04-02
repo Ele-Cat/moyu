@@ -62,12 +62,8 @@ export const useGameStore = defineStore("game", {
     }
   },
   persist: {
-    enabled: true,
-    strategies: [
-      {
-        storage: localStorage,
-        paths: ['mazeRecords', 'game2048Best', 'breakoutBest', 'snakeBest', 'tetrisBest', 'typingBest', 'memoryBest'],
-      },
-    ],
+    key: 'game',
+    storage: localStorage,
+    paths: ['mazeRecords', 'game2048Best', 'breakoutBest', 'snakeBest', 'tetrisBest', 'typingBest', 'memoryBest'],
   },
 });

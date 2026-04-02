@@ -64,12 +64,8 @@ export const useWallpaperStore = defineStore("wallpaper", {
     },
   },
   persist: {
-    enabled: true,
-    strategies: [
-      {
-        storage: localStorage,
-        paths: ['history', 'favorites', 'videoPath', 'videoActive', 'staticCategories'],
-      },
-    ],
+    key: 'wallpaper',
+    storage: localStorage,
+    paths: ['history', 'favorites', 'videoPath', 'videoActive', 'staticCategories'],
   },
 });

@@ -4,6 +4,9 @@
       <img v-if="isDark" src="@/assets/svg/sun.svg" alt="sun" class="icon" />
       <img v-else src="@/assets/svg/moon.svg" alt="moon" class="icon" />
     </button>
+    <button class="window-btn settings-btn" @click="appStore.showSettings = true">
+      <img src="@/assets/svg/settings.svg" alt="settings" class="icon" />
+    </button>
     <button class="window-btn minimize" @click="minimizeWindow">
       <img src="@/assets/svg/minimize.svg" alt="minimize" class="icon" />
     </button>
@@ -22,6 +25,9 @@ import { ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useDark } from '@/hooks/useDark'
+import { useAppStore } from '@/stores/modules/app'
+
+const appStore = useAppStore()
 
 const emit = defineEmits(['toggle-theme'])
 

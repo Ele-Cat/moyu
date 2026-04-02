@@ -1,68 +1,110 @@
 <template>
   <div class="music-player">
-    <div class="content">
-      <div class="music-list">
-        <div class="list-header">
-          <button @click="selectFolder">📂 选择音乐文件夹</button>
-        </div>
-
-        <div v-if="musicList.length > 0" class="list">
-          <div
-            v-for="(music, index) in musicList"
-            :key="music.path"
-            class="music-item"
-            :class="{ active: currentIndex === index }"
-            @click="playMusic(index)"
+    <div class="header">
+      <div class="source-selector">
+        <el-select v-model="currentSourceId" @change="handleSourceChange" placeholder="选择音源">
+          <el-option
+            v-for="source in sources"
+            :key="source.id"
+            :label="source.name"
+            :value="source.id"
           >
-            <span class="music-icon">{{ currentIndex === index ? '🔊' : '🎵' }}</span>
-            <span class="music-name">{{ music.name }}</span>
-          </div>
-        </div>
+            <div class="source-option">
+              <span>{{ source.name }}</span>
+              <el-tag :type="getSourceStatusType(source.status)" size="small">
+                {{ getSourceStatusText(source.status) }}
+              </el-tag>
+            </div>
+          </el-option>
+        </el-select>
+        <el-button type="primary" size="small" @click="showSourceManage = true">
+          管理音源
+        </el-button>
+      </div>
+    </div>
 
-        <div v-else class="empty">
-          请选择音乐文件夹
+    <div class="content">
+      <el-tabs v-model="activeTab" class="main-tabs">
+        <el-tab-pane label="🔍 搜索" name="search">
+          <SearchTab
+            :current-music="currentMusic"
+            :is-playing="isPlaying"
+            @play-music="playOnlineMusic"
+            @add-to-playlist="addToPlayList"
+          />
+        </el-tab-pane>
+
+        <el-tab-pane label="📋 歌单" name="songlist">
+          <SongListTab @load-songs="handleLoadSongs" />
+        </el-tab-pane>
+
+        <el-tab-pane label="🏆 排行榜" name="leaderboard">
+          <LeaderboardTab @load-songs="handleLoadSongs" />
+        </el-tab-pane>
+
+        <el-tab-pane label="💾 本地音乐" name="local">
+          <LocalMusicTab
+            v-model:local-music-list="localMusicList"
+            :current-index="currentIndex"
+            :is-playing="isPlaying && isLocalMusic"
+            @play-music="playLocalMusic"
+          />
+        </el-tab-pane>
+      </el-tabs>
+    </div>
+
+    <div class="player-bar">
+      <div class="current-music">
+        <div class="cover">
+          {{ currentMusic ? '🎵' : '📀' }}
+        </div>
+        <div class="info">
+          <div class="title">{{ currentMusic?.name || currentMusic?.songname || '未选择音乐' }}</div>
+          <div class="artist">
+            {{ currentMusic?.singer?.map(s => s.name).join(' / ') || currentMusic?.artist || '' }}
+          </div>
         </div>
       </div>
 
-      <div class="player-panel">
-        <div class="current-music">
-          <div class="cover">
-            {{ currentMusic ? '🎵' : '📀' }}
-          </div>
-          <div class="info">
-            <div class="title">{{ currentMusic?.name || '未选择音乐' }}</div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <button @click="prevMusic">⏮️</button>
-          <button class="play-btn" @click="togglePlay">
-            {{ isPlaying ? '⏸️' : '▶️' }}
-          </button>
-          <button @click="nextMusic">⏭️</button>
-        </div>
-
+      <div class="controls">
         <div class="progress">
           <span>{{ formatTime(currentTime) }}</span>
-          <input
-            type="range"
-            min="0"
+          <el-slider
+            v-model="currentTime"
             :max="duration"
-            :value="currentTime"
-            @input="seekMusic"
+            @change="seekMusic"
+            :show-tooltip="false"
           />
           <span>{{ formatTime(duration) }}</span>
         </div>
 
+        <div class="control-buttons">
+          <el-button circle @click="prevMusic">
+            <el-icon><DArrowLeft /></el-icon>
+          </el-button>
+          <el-button type="primary" circle size="large" @click="togglePlay">
+            <el-icon>
+              <VideoPlay v-if="!isPlaying" />
+              <VideoPause v-else />
+            </el-icon>
+          </el-button>
+          <el-button circle @click="nextMusic">
+            <el-icon><DArrowRight /></el-icon>
+          </el-button>
+        </div>
+
         <div class="extra-controls">
-          <button @click="toggleMute">
-            {{ isMuted ? '🔇' : '🔊' }}
-          </button>
-          <select v-model="playMode" @change="changeMode">
-            <option value="sequence">顺序播放</option>
-            <option value="loop">单曲循环</option>
-            <option value="random">随机播放</option>
-          </select>
+          <el-button circle @click="toggleMute">
+            <el-icon>
+              <Mute v-if="isMuted" />
+              <Microphone v-else />
+            </el-icon>
+          </el-button>
+          <el-select v-model="playMode" @change="changeMode" size="small">
+            <el-option value="sequence" label="顺序" />
+            <el-option value="loop" label="单曲" />
+            <el-option value="random" label="随机" />
+          </el-select>
         </div>
       </div>
     </div>
@@ -72,18 +114,68 @@
       @timeupdate="onTimeUpdate"
       @ended="onEnded"
       @loadedmetadata="onLoaded"
+      @error="onError"
     ></audio>
+
+    <el-dialog v-model="showSourceManage" title="音源管理" width="600px">
+      <div class="source-manage">
+        <el-form :model="newSource" label-width="80px">
+          <el-form-item label="名称">
+            <el-input v-model="newSource.name" placeholder="输入音源名称" />
+          </el-form-item>
+          <el-form-item label="地址">
+            <el-input v-model="newSource.url" placeholder="输入音源脚本地址" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="addNewSource">添加</el-button>
+          </el-form-item>
+        </el-form>
+
+        <el-divider />
+
+        <div class="source-list">
+          <div v-for="source in sources" :key="source.id" class="source-item">
+            <div class="info">
+              <span class="name">{{ source.name }}</span>
+              <el-tag :type="getSourceStatusType(source.status)" size="small">
+                {{ getSourceStatusText(source.status) }}
+              </el-tag>
+            </div>
+            <div class="actions">
+              <el-switch v-model="source.enabled" @change="toggleSource(source.id)" />
+              <el-button type="danger" size="small" link @click="deleteSource(source.id)">
+                删除
+              </el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-defineOptions({ name: 'MusicPlayer' })
-import { ref, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import { open } from '@tauri-apps/plugin-dialog'
 import { convertFileSrc } from '@tauri-apps/api/core'
+import { ElMessage } from 'element-plus'
+import { DArrowLeft, DArrowRight, VideoPlay, VideoPause, Mute, Microphone } from '@element-plus/icons-vue'
+import { useMusicSourceStore } from '@/stores/modules/musicSource'
+import musicSdk from '@/utils/musicSdk'
+import SearchTab from './modules/SearchTab.vue'
+import SongListTab from './modules/SongListTab.vue'
+import LeaderboardTab from './modules/LeaderboardTab.vue'
+import LocalMusicTab from './modules/LocalMusicTab.vue'
 
-const musicList = ref([])
+defineOptions({ name: 'MusicPlayer' })
+
+const sourceStore = useMusicSourceStore()
+
+const activeTab = ref('search')
+const currentSourceId = ref(sourceStore.currentSourceId)
+const sources = computed(() => sourceStore.sources)
+
+const localMusicList = ref([])
 const currentIndex = ref(-1)
 const currentMusic = ref(null)
 const isPlaying = ref(false)
@@ -91,39 +183,84 @@ const isMuted = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
 const playMode = ref('sequence')
+const isLocalMusic = ref(false)
+
+const showSourceManage = ref(false)
+const newSource = ref({ name: '', url: '' })
 
 const audioRef = ref(null)
+const playList = ref([])
 
-async function selectFolder() {
+const getSourceStatusType = (status) => {
+  const map = {
+    idle: 'info',
+    loading: 'warning',
+    ready: 'success',
+    error: 'danger',
+  }
+  return map[status] || 'info'
+}
+
+const getSourceStatusText = (status) => {
+  const map = {
+    idle: '未加载',
+    loading: '加载中',
+    ready: '就绪',
+    error: '错误',
+  }
+  return map[status] || '未知'
+}
+
+const handleSourceChange = async (sourceId) => {
   try {
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      title: '选择音乐文件夹',
-    })
-
-    if (selected) {
-      const files = await invoke('scan_folder', {
-        path: selected,
-        extensions: ['mp3', 'flac', 'wav', 'ogg', 'm4a'],
-      })
-      musicList.value = files
-
-      if (musicList.value.length > 0) {
-        playMusic(0)
-      }
-    }
-  } catch (e) {
-    console.error('选择文件夹失败:', e)
-    alert('选择文件夹失败: ' + e)
+    await sourceStore.setCurrentSource(sourceId)
+    ElMessage.success('音源切换成功')
+  } catch (error) {
+    ElMessage.error('音源切换失败: ' + error.message)
   }
 }
 
-function playMusic(index) {
+const handleLoadSongs = (songs) => {
+  playList.value = songs
+  activeTab.value = 'search'
+}
+
+const playOnlineMusic = async (music) => {
+  try {
+    ElMessage.info('正在获取播放链接...')
+    const url = await musicSdk.getMusicUrl(music)
+    
+    if (!url) {
+      ElMessage.error('无法获取播放链接')
+      return
+    }
+
+    currentMusic.value = music
+    isLocalMusic.value = false
+    
+    if (!audioRef.value) return
+    
+    audioRef.value.src = url
+    audioRef.value.play()
+    isPlaying.value = true
+  } catch (error) {
+    ElMessage.error('播放失败: ' + error.message)
+  }
+}
+
+const addToPlayList = (music) => {
+  if (!playList.value.find(m => m.songmid === music.songmid)) {
+    playList.value.push(music)
+    ElMessage.success('已添加到播放列表')
+  }
+}
+
+const playLocalMusic = (index) => {
   if (!audioRef.value) return
 
   currentIndex.value = index
-  currentMusic.value = musicList.value[index]
+  currentMusic.value = localMusicList.value[index]
+  isLocalMusic.value = true
 
   const src = convertFileSrc(currentMusic.value.path)
   audioRef.value.src = src
@@ -131,7 +268,7 @@ function playMusic(index) {
   isPlaying.value = true
 }
 
-function togglePlay() {
+const togglePlay = () => {
   if (!audioRef.value) return
 
   if (isPlaying.value) {
@@ -142,49 +279,60 @@ function togglePlay() {
   isPlaying.value = !isPlaying.value
 }
 
-function prevMusic() {
-  if (musicList.value.length === 0) return
+const prevMusic = () => {
+  const list = isLocalMusic.value ? localMusicList.value : playList.value
+  if (list.length === 0) return
 
   if (playMode.value === 'random') {
-    const randomIndex = Math.floor(Math.random() * musicList.value.length)
-    playMusic(randomIndex)
+    const randomIndex = Math.floor(Math.random() * list.length)
+    playByIndex(randomIndex)
   } else {
-    const newIndex = currentIndex.value <= 0 ? musicList.value.length - 1 : currentIndex.value - 1
-    playMusic(newIndex)
+    const newIndex = currentIndex.value <= 0 ? list.length - 1 : currentIndex.value - 1
+    playByIndex(newIndex)
   }
 }
 
-function nextMusic() {
-  if (musicList.value.length === 0) return
+const nextMusic = () => {
+  const list = isLocalMusic.value ? localMusicList.value : playList.value
+  if (list.length === 0) return
 
   if (playMode.value === 'random') {
-    const randomIndex = Math.floor(Math.random() * musicList.value.length)
-    playMusic(randomIndex)
+    const randomIndex = Math.floor(Math.random() * list.length)
+    playByIndex(randomIndex)
   } else {
-    const newIndex = currentIndex.value >= musicList.value.length - 1 ? 0 : currentIndex.value + 1
-    playMusic(newIndex)
+    const newIndex = currentIndex.value >= list.length - 1 ? 0 : currentIndex.value + 1
+    playByIndex(newIndex)
   }
 }
 
-function seekMusic(event) {
+const playByIndex = (index) => {
+  if (isLocalMusic.value) {
+    playLocalMusic(index)
+  } else {
+    const music = playList.value[index]
+    currentIndex.value = index
+    playOnlineMusic(music)
+  }
+}
+
+const seekMusic = (value) => {
   if (!audioRef.value) return
-
-  const value = parseInt((event.target).value)
   audioRef.value.currentTime = value
   currentTime.value = value
 }
 
-function toggleMute() {
+const toggleMute = () => {
   if (!audioRef.value) return
 
   isMuted.value = !isMuted.value
   audioRef.value.muted = isMuted.value
 }
 
-function changeMode() {
+const changeMode = () => {
+  ElMessage.info(`播放模式已切换为: ${playMode.value === 'sequence' ? '顺序' : playMode.value === 'loop' ? '单曲循环' : '随机'}`)
 }
 
-function onEnded() {
+const onEnded = () => {
   if (playMode.value === 'loop') {
     audioRef.value?.play()
   } else {
@@ -192,22 +340,46 @@ function onEnded() {
   }
 }
 
-function onTimeUpdate() {
+const onTimeUpdate = () => {
   if (audioRef.value) {
     currentTime.value = Math.floor(audioRef.value.currentTime)
   }
 }
 
-function onLoaded() {
+const onLoaded = () => {
   if (audioRef.value) {
     duration.value = Math.floor(audioRef.value.duration)
   }
 }
 
-function formatTime(seconds) {
+const onError = () => {
+  ElMessage.error('播放出错，请尝试其他音源或歌曲')
+}
+
+const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+const addNewSource = () => {
+  if (!newSource.value.name || !newSource.value.url) {
+    ElMessage.warning('请填写完整的音源信息')
+    return
+  }
+
+  sourceStore.addSource(newSource.value)
+  newSource.value = { name: '', url: '' }
+  ElMessage.success('音源添加成功')
+}
+
+const deleteSource = (sourceId) => {
+  sourceStore.removeSource(sourceId)
+  ElMessage.success('音源已删除')
+}
+
+const toggleSource = (sourceId) => {
+  sourceStore.toggleSourceEnabled(sourceId)
 }
 
 onUnmounted(() => {
@@ -221,192 +393,155 @@ onUnmounted(() => {
 .music-player {
   display: flex;
   flex-direction: column;
+  height: 100%;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+}
+
+.header {
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid #eee;
+
+  .source-selector {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
 }
 
 .content {
   flex: 1;
-  display: flex;
   overflow: hidden;
-}
-
-.music-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   background: rgba(255, 255, 255, 0.95);
   margin: 20px;
   border-radius: 12px;
-  overflow: hidden;
 }
 
-.list-header {
-  padding: 15px;
-  border-bottom: 1px solid #eee;
-
-  button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    background: #2a5298;
-    color: #fff;
-    cursor: pointer;
-  }
-}
-
-.list {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.music-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #f5f5f5;
-  }
-
-  &.active {
-    background: #e0e0e0;
-    color: #2a5298;
-  }
-}
-
-.music-icon {
-  font-size: 20px;
-}
-
-.music-name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #888;
-}
-
-.player-panel {
-  width: 350px;
-  background: rgba(255, 255, 255, 0.95);
-  margin: 20px 20px 20px 0;
-  border-radius: 12px;
-  padding: 30px;
+.main-tabs {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+
+  :deep(.el-tabs__content) {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  :deep(.el-tab-pane) {
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
-.current-music {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.cover {
-  width: 150px;
-  height: 150px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 60px;
-  margin: 0 auto 15px;
-  animation: rotate 10s linear infinite;
-  animation-play-state: paused;
-}
-
-.is-playing .cover {
-  animation-play-state: running;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.info .title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-.controls {
+.player-bar {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 30px;
+  padding: 15px 25px;
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid #eee;
 
-  button {
-    width: 50px;
-    height: 50px;
-    border: none;
-    border-radius: 50%;
-    background: #2a5298;
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    transition: transform 0.2s;
+  .current-music {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 250px;
 
-    &:hover {
-      transform: scale(1.1);
+    .cover {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .info {
+      flex: 1;
+      overflow: hidden;
+
+      .title {
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .artist {
+        font-size: 12px;
+        color: #888;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
   }
 
-  .play-btn {
-    width: 60px !important;
-    height: 60px !important;
-    font-size: 24px !important;
-  }
-}
-
-.progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  margin-bottom: 20px;
-
-  span {
-    font-size: 12px;
-    color: #666;
-    min-width: 40px;
-  }
-
-  input[type="range"] {
+  .controls {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .progress {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+
+      span {
+        font-size: 12px;
+        color: #666;
+        min-width: 40px;
+      }
+    }
+
+    .control-buttons {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .extra-controls {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+    }
   }
 }
 
-.extra-controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+.source-manage {
+  .source-list {
+    .source-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
 
-  button {
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 50%;
-    background: #f0f0f0;
-    font-size: 18px;
-    cursor: pointer;
-  }
+      &:last-child {
+        border-bottom: none;
+      }
 
-  select {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+      .info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .name {
+          font-weight: 500;
+        }
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+    }
   }
 }
 </style>

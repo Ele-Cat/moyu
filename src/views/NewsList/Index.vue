@@ -180,13 +180,13 @@ function isSubscribed(sourceId) {
 function toggleSubscribe(source) {
   if (isSubscribed(source.id)) {
     newsStore.removeSubscription(source.id)
-    ElMessage.info(`已取消收藏 ${source.name}`)
+    ElMessage.info(`已取消订阅 ${source.name}`)
     if (currentCategory.value === 'subscribe' && selectedSource.value?.id === source.id) {
       selectFirstSource()
     }
   } else {
     newsStore.addSubscription(source)
-    ElMessage.success(`已收藏 ${source.name}`)
+    ElMessage.success(`已订阅 ${source.name}`)
   }
 }
 

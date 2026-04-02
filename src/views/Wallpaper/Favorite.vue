@@ -13,7 +13,7 @@
       show-apply
       show-favorite
       show-title
-      empty-text="暂无收藏内容"
+      empty-text="暂无订阅内容"
       @apply="item => emit('apply', item)"
       @favorite="item => emit('favorite', item)"
       @page-change="pageNo = $event"

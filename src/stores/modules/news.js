@@ -29,12 +29,8 @@ export const useNewsStore = defineStore("news", {
   },
   
   persist: {
-    enabled: true,
-    strategies: [
-      {
-        storage: localStorage,
-        paths: ['subscriptions'],
-      },
-    ],
+    key: 'news',
+    storage: localStorage,
+    paths: ['subscriptions'],
   },
 })
