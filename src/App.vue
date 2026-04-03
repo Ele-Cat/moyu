@@ -1,38 +1,24 @@
 <template>
   <div class="app-container">
     <el-config-provider :locale="locale" :message="messageConfig">
-      <FHeader v-if="!isVideoWallpaper" :isDark="isDark" />
-
-      <div class="main-layout">
-        <FSidebar v-if="!isVideoWallpaper" />
-
-        <div class="main-content" :class="{ 'fullscreen': isVideoWallpaper }">
-          <router-view v-slot="{ Component }">
-            <transition name="fade-slide" mode="out-in">
-              <keep-alive :include="cachedViews">
-                <component style="overflow-x: hidden;" :is="Component" :key="route.path" />
-              </keep-alive>
-            </transition>
-          </router-view>
-        </div>
-      </div>
-
-      <Settings v-model="appStore.showSettings" />
+      <router-view />
     </el-config-provider>
   </div>
 </template>
 
 <script setup>
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { computed, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { useAppStore } from '@/stores/modules/app'
-import { useWallpaperStore } from '@/stores/modules/wallpaper'
-import { useVideoWallpaper } from '@/hooks/useVideoWallpaper'
 import { useDark } from '@/hooks/useDark'
-import FHeader from '@/layouts/FHeader/Index.vue'
-import FSidebar from '@/layouts/FSidebar/Index.vue'
-import Settings from '@/components/Settings/Index.vue'
+import { useVideoWallpaper } from '@/hooks/useVideoWallpaper'
+import { useWallpaperStore } from '@/stores/modules/wallpaper'
+
+const appStore = useAppStore()
+const { isDark, init: initDark } = useDark()
+
+const wallpaperStore = useWallpaperStore()
+const { openVideoWallpaper } = useVideoWallpaper()
 
 const locale = computed(() => zhCn)
 const messageConfig = reactive({
@@ -40,28 +26,15 @@ const messageConfig = reactive({
   offset: 60,
 })
 
-const appStore = useAppStore()
-const route = useRoute()
-const { isDark, init: initDark } = useDark()
-
-const isVideoWallpaper = computed(() => route.path === '/video-wallpaper')
-
-const cachedViews = computed(() => {
-  return ['Home', 'NovelReader', 'MusicPlayer', 'NewsList', 'Wallpaper', 'Tools', 'Game']
-})
+const isFirstMount = true || !import.meta.hot
 
 onMounted(() => {
   initDark()
-  initTheme()
-  initWallpaper()
-})
-
-const wallpaperStore = useWallpaperStore()
-const { openVideoWallpaper } = useVideoWallpaper()
-
-function initTheme() {
   appStore.initTheme()
-}
+  if (isFirstMount) {
+    initWallpaper()
+  }
+})
 
 function initWallpaper() {
   if (wallpaperStore.isVideoActive) {
@@ -75,44 +48,5 @@ function initWallpaper() {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: var(--bg-color);
-}
-
-.main-layout {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.main-content {
-  flex: 1;
-  height: calc(100vh - var(--header-height));
-  overflow: hidden;
-  background: var(--bg-color);
-  transition: background-color 0.3s;
-
-  &.fullscreen {
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  :deep(.el-scrollbar__wrap) {
-    overflow-x: hidden;
-  }
-}
-
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.2s ease;
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateX(10px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateX(-10px);
 }
 </style>

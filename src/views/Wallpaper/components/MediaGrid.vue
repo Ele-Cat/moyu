@@ -27,7 +27,7 @@
             {{ item.name }}
           </div>
           <div v-if="['favorite', 'history'].includes(type)" class="hover-title">
-            {{ type === 'favorite' ? '收藏于：' : '使用于：'}}{{ formatTimestamp(item.timestamp) }}
+            {{ type === 'favorite' ? '收藏于：' : '使用于：'}}{{ formatDateTime(item.timestamp, 'YYYY-MM-DD HH:mm') }}
           </div>
           
           <div class="hover-actions bottom-actions">
@@ -100,7 +100,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { PictureFilled, View, StarFilled, Star, Delete } from '@element-plus/icons-vue'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
 import { useAppStore } from '@/stores/modules/app'
-import { formatTimestamp } from '@/utils/util'
+import { formatDateTime } from '@/utils/util'
 import { ElMessage } from 'element-plus'
 
 const store = useWallpaperStore()

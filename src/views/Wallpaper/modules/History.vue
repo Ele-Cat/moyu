@@ -28,7 +28,7 @@
 import { ref, watch } from 'vue'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import MediaGrid from './components/MediaGrid.vue'
+import MediaGrid from '../components/MediaGrid.vue'
 
 const emit = defineEmits(['apply', 'preview', 'favorite'])
 

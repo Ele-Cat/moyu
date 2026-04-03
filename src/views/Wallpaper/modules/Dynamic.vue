@@ -50,7 +50,7 @@ import { ref, onMounted } from 'vue'
 import { convertFileSrc } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { get } from '@/utils/http'
-import MediaGrid from './components/MediaGrid.vue'
+import MediaGrid from '../components/MediaGrid.vue'
 
 const activeTab = ref('online')
 const tabs = [

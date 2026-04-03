@@ -34,10 +34,10 @@ import { invoke } from '@tauri-apps/api/core'
 import { ElMessage } from 'element-plus'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
 import { useVideoWallpaper } from '@/hooks/useVideoWallpaper'
-import Static from './Static.vue'
-import Dynamic from './Dynamic.vue'
-import History from './History.vue'
-import Favorite from './Favorite.vue'
+import Static from './modules/Static.vue'
+import Dynamic from './modules/Dynamic.vue'
+import History from './modules/History.vue'
+import Favorite from './modules/Favorite.vue'
 
 const { openVideoWallpaper, closeVideoWallpaper } = useVideoWallpaper()
 

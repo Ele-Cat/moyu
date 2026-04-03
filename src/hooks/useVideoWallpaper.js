@@ -17,7 +17,7 @@ export function useVideoWallpaper() {
       }
       
       underlayWindow.value = new WebviewWindow('underlay', {
-        url: `/video-wallpaper?path=${encodeURIComponent(item.url)}`,
+        url: `/sub/video-wallpaper?path=${encodeURIComponent(item.url)}`,
         title: 'VideoWallpaper',
         width: 1920,
         height: 1080,
@@ -47,6 +47,7 @@ export function useVideoWallpaper() {
 
   async function closeVideoWallpaper() {
     try {
+      await initVideoWallpaper()
       if (underlayWindow.value) {
         await setDesktopUnderlay(false, 'underlay')
         await underlayWindow.value.close()

@@ -285,25 +285,6 @@ fn read_novel_content(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("读取文件失败: {}", e))
 }
 
-#[tauri::command]
-/// 获取新闻内容
-async fn fetch_news(url: String) -> Result<String, String> {
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format!("请求失败: {}", e))?;
-
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("读取响应失败: {}", e))?;
-
-    Ok(body)
-}
-
 use wallpaper::set_from_path;
 
 #[tauri::command]
@@ -464,6 +445,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_desktop_underlay::init())
         .manage(AppState::default())
@@ -483,8 +465,14 @@ pub fn run() {
                 let window_clone = window.clone();
                 app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
                     if event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        let _ = window_clone.hide();
-                        log::info!("老板键触发，窗口已隐藏");
+                        if window_clone.is_visible().unwrap_or(false) {
+                            let _ = window_clone.hide();
+                            log::info!("老板键触发，窗口已隐藏");
+                        } else {
+                            let _ = window_clone.show();
+                            let _ = window_clone.set_focus();
+                            log::info!("老板键触发，窗口已显示");
+                        }
                     }
                 })?;
 
@@ -513,7 +501,6 @@ pub fn run() {
             open_folder,
             scan_folder,
             read_novel_content,
-            fetch_news,
             set_wallpaper,
             download_file,
             refresh_wallpaper,

@@ -38,10 +38,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, markRaw } from 'vue'
 import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import CountdownTool from './modules/CountdownTool.vue'
 import ClipboardTool from './modules/ClipboardTool.vue'
+import TodoReminder from './modules/TodoReminder.vue'
 
 defineOptions({ name: 'Tools' })
 
@@ -55,7 +56,7 @@ const tools = [
     icon: '⏰',
     desc: '设置目标时间，计算剩余时间',
     help: `<p>倒计时模式：设置目标时间，实时显示距离目标还有多少时间。</p><p>番茄钟模式：工作25分钟，休息5分钟，帮助提高专注力。</p><p>点击"最小化到托盘"可以将窗口隐藏到系统托盘。</p>`,
-    component: CountdownTool
+    component: markRaw(CountdownTool)
   },
   {
     id: 'clipboard',
@@ -63,7 +64,15 @@ const tools = [
     icon: '📋',
     desc: '自动记录剪贴板历史',
     help: `<p>自动记录剪贴板历史，方便查找之前复制的内容。</p><p>点击任意记录可快速复制到剪贴板。</p><p>按 <b>Ctrl+Alt+V</b> 快速打开剪贴板（需要后台运行）。</p><p>历史记录保存在本地浏览器存储中。</p>`,
-    component: ClipboardTool
+    component: markRaw(ClipboardTool)
+  },
+  {
+    id: 'todo',
+    name: '待办提醒',
+    icon: '✅',
+    desc: '设置待办任务和提醒',
+    help: `<p>待办提醒功能支持两种运行方式：</p><p>1. 指定时间：设置具体的日期时间，到点提醒</p><p>2. CRON表达式：支持复杂的定时任务，如每天9点执行</p><p>支持傻瓜式CRON配置，无需手动编写表达式</p><p>待办任务保存在本地存储中，刷新页面不会丢失</p>`,
+    component: markRaw(TodoReminder)
   }
 ]
 
@@ -130,7 +139,7 @@ function goBack() {
   }
 
   .tool-content {
-    height: calc(100% - 60px);
+    height: calc(100% - 50px);
   }
 
   .help-content {

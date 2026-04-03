@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "摸鱼小助手权限配置",
-  "windows": ["main", "underlay"],
+  "windows": ["main", "underlay", "reminder_*"],
   "permissions": [
     "core:default",
     "opener:default",
@@ -25,12 +25,19 @@
     "store:default",
     "dialog:default",
     "dialog:allow-open",
+    "notification:default",
+    "notification:allow-is-permission-granted",
+    "notification:allow-request-permission",
+    "notification:allow-notify",
     "fs:default",
     "fs:allow-read",
     "fs:allow-exists",
     "fs:allow-read-file",
     "fs:allow-read-dir",
     "desktop-underlay:default",
-    "core:webview:allow-create-webview-window"
+    "core:webview:allow-create-webview-window",
+    "core:event:default",
+    "core:event:allow-emit",
+    "core:event:allow-emit-to"
   ]
 }

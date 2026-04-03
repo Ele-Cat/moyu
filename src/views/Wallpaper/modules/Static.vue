@@ -27,7 +27,7 @@
 <script setup>
 import { ref, onMounted, onBeforeMount } from 'vue'
 import { get } from '@/utils/http'
-import MediaGrid from './components/MediaGrid.vue'
+import MediaGrid from '../components/MediaGrid.vue'
 import { useWallpaperStore } from '@/stores/modules/wallpaper'
 
 const wallpaperStore = useWallpaperStore()
