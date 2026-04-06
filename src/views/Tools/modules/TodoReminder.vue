@@ -221,7 +221,7 @@ const onReminderDone = (reminder) => {
 
 const activeTab = ref('pending')
 const showDialog = ref(false)
-const showCronBuilder = ref('builder')
+const showCronBuilder = ref('')
 const editingTodo = ref(null)
 const formRef = ref(null)
 
@@ -586,6 +586,7 @@ onUnmounted(() => {
         overflow: hidden;
         text-overflow: ellipsis;
         display: -webkit-box;
+        line-clamp: 2;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
       }
