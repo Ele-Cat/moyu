@@ -50,8 +50,8 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
 import { fetchUrl } from '@/utils/http'
+import { request } from '@/hooks/useApi'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
 import { buildSearchUrl, parseSearchResult, parseHeader } from '@/views/NovelReader/utils'
 
@@ -103,38 +103,44 @@ async function searchBooks() {
     // const res = await fetchUrl(searchConfig.url, requestOptions)
     
     // 使用后端 API 备选（如果前端 fetch 失败）
-    const {body: res} = await invoke('fetch_api', {
-      options: {
+    try {
+      const requestOptions = {
         url: searchConfig.url,
         method: searchConfig.method || 'GET',
         headers: headers,
-        body: searchConfig.body,
         return_type: 'text'
       }
-    })
-    console.log('res:', res)
+      if (searchConfig.body) {
+        requestOptions.body = searchConfig.body
+      }
+      
+      const res = await request(requestOptions)
+      console.log('res:', res)
 
-    if (res) {
-      const ruleSearch = source.ruleSearch || {}
-      console.log('source: ', source);
-      console.log('搜索规则:', ruleSearch)
-      
-      const results = parseSearchResult(res, ruleSearch, source.bookSourceUrl)
-      console.log('解析结果数量:', results.length)
-      console.log('解析结果:', results)
-      
-      searchResults.value = results.map(item => ({
-        bookName: item.bookName,
-        author: item.author,
-        bookUrl: item.bookUrl,
-        coverUrl: item.coverUrl,
-        intro: item.intro,
-        kind: item.kind,
-        wordCount: item.wordCount,
-        latestChapter: item.latestChapter,
-        sourceName: source.bookSourceName,
-        sourceUrl: source.bookSourceUrl
-      }))
+      if (res) {
+        const ruleSearch = source.ruleSearch || {}
+        console.log('source: ', source);
+        console.log('搜索规则:', ruleSearch)
+        
+        const results = parseSearchResult(res, ruleSearch, source.bookSourceUrl)
+        console.log('解析结果数量:', results.length)
+        console.log('解析结果:', results)
+        
+        searchResults.value = results.map(item => ({
+          bookName: item.bookName,
+          author: item.author,
+          bookUrl: item.bookUrl,
+          coverUrl: item.coverUrl,
+          intro: item.intro,
+          kind: item.kind,
+          wordCount: item.wordCount,
+          latestChapter: item.latestChapter,
+          sourceName: source.bookSourceName,
+          sourceUrl: source.bookSourceUrl
+        }))
+      }
+    } catch (invokeError) {
+      console.error('invoke调用失败:', invokeError)
     }
   } catch (e) {
     console.error('搜索失败:', e)
