@@ -5,7 +5,6 @@ import { useReminderStore } from '@/stores/modules/reminder'
 
 const reminderWindows = ref({})
 let reminderStore = null
-let onReminderDoneCallback = null
 let worker = null
 
 export function useReminder() {
@@ -87,7 +86,7 @@ export function useReminder() {
       
       const unlistenDone = await listen('reminder-action-done', (event) => {
         closeReminderWindow(event.payload.label)
-        handleReminderDone(event.payload, onReminderDoneCallback)
+        handleReminderDone(event.payload)
       })
       
       const unlistenClose = await listen('reminder-action-close', (event) => {
@@ -130,15 +129,11 @@ export function useReminder() {
     }
   }
   
-  async function handleReminderDone(reminder, onDone) {
+  async function handleReminderDone(reminder) {
     const runMode = reminder.runMode || 'time'
     
     if (runMode === 'time') {
       reminderStore.completeTodo(reminder.id)
-    }
-    
-    if (onDone) {
-      onDone(reminder)
     }
   }
   
@@ -199,14 +194,6 @@ export function useReminder() {
     closeReminderWindow,
     closeAllReminderWindows,
     initReminderWindows,
-    setOnReminderDoneCallback: (callback) => {
-      onReminderDoneCallback = callback
-    },
-    notifyReminderClosed: (reminder) => {
-      if (worker) {
-        worker.postMessage({ type: 'closedReminder', data: reminder })
-      }
-    },
     refreshWorker: (todos) => {
       if (worker) {
         worker.postMessage({ 

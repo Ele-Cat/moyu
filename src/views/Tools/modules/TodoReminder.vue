@@ -210,11 +210,7 @@ import TodoCard from '@/views/Tools/Components/TodoCard.vue'
 import { getCronNextTimes } from '@/utils/util'
 
 const reminderStore = useReminderStore()
-const { openReminderWindow, closeAllReminderWindows, setOnReminderDoneCallback, notifyReminderClosed, refreshWorker } = useReminder()
-
-const onReminderDone = (reminder) => {
-  notifyReminderClosed({ id: reminder.id })
-}
+const { closeAllReminderWindows, refreshWorker } = useReminder()
 
 const activeTab = ref('pending')
 const showDialog = ref(false)
