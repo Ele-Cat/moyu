@@ -4,10 +4,15 @@ import { listen } from '@tauri-apps/api/event'
 import { useReminderStore } from '@/stores/modules/reminder'
 
 const reminderWindows = ref({})
-const reminderStore = useReminderStore()
+let reminderStore = null
 let onReminderDoneCallback = null
+let worker = null
 
 export function useReminder() {
+  if (!reminderStore) {
+    reminderStore = useReminderStore()
+  }
+  
   async function openReminderWindow(reminder) {
     console.log('reminder: ', reminder);
     const label = `reminder_${reminder.id}_${Date.now()}`
@@ -65,6 +70,10 @@ export function useReminder() {
         setTimeout(async () => {
           await reminderWindow.show()
         }, 100)
+        
+        if (worker) {
+          worker.postMessage({ type: 'activeReminder', data: { id: reminder.id } })
+        }
       })
       
       reminderWindow.once('tauri://error', (e) => {
@@ -197,6 +206,19 @@ export function useReminder() {
       if (worker) {
         worker.postMessage({ type: 'closedReminder', data: reminder })
       }
+    },
+    refreshWorker: (todos) => {
+      if (worker) {
+        worker.postMessage({ 
+          type: 'update', 
+          data: { 
+            todos: JSON.parse(JSON.stringify(todos)) 
+          } 
+        })
+      }
+    },
+    setWorkerRef: (w) => {
+      worker = w
     }
   }
 }

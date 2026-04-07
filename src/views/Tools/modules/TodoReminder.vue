@@ -200,23 +200,20 @@
 
 <script setup>
 defineOptions({ name: 'TodoReminder' })
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import moment from 'moment'
 import 'moment/locale/zh-cn'
-import todoWorker from './todoWorker.js?worker'
 import { useReminderStore } from '@/stores/modules/reminder'
 import { useReminder } from '@/hooks/useReminder'
 import TodoCard from '@/views/Tools/Components/TodoCard.vue'
 import { getCronNextTimes } from '@/utils/util'
 
 const reminderStore = useReminderStore()
-const { openReminderWindow, closeAllReminderWindows, setOnReminderDoneCallback } = useReminder()
+const { openReminderWindow, closeAllReminderWindows, setOnReminderDoneCallback, notifyReminderClosed, refreshWorker } = useReminder()
 
 const onReminderDone = (reminder) => {
-  if (worker) {
-    worker.postMessage({ type: 'closedReminder', data: { id: reminder.id } })
-  }
+  notifyReminderClosed({ id: reminder.id })
 }
 
 const activeTab = ref('pending')
@@ -356,50 +353,6 @@ const filteredTodos = computed(() => {
   return todos.value.filter(t => t.status === 'pending')
 })
 
-let worker = null
-
-const initWorker = () => {
-  if (worker) return
-  
-  worker = new todoWorker()
-  
-  worker.onmessage = (e) => {
-    const { type, data } = e.data
-    
-    if (type === 'remind') {
-      openReminderWindow({
-        ...data,
-        runMode: data.runMode || 'time',
-      })
-    }
-  }
-  
-  worker.postMessage({ 
-    type: 'start', 
-    data: { 
-      todos: JSON.parse(JSON.stringify(todos.value)) 
-    } 
-  })
-}
-
-const stopWorker = () => {
-  if (worker) {
-    worker.postMessage({ type: 'stop' })
-    worker = null
-  }
-}
-
-const refreshWorker = () => {
-  if (worker) {
-    worker.postMessage({ 
-      type: 'update', 
-      data: { 
-        todos: JSON.parse(JSON.stringify(todos.value)) 
-      } 
-    })
-  }
-}
-
 const openAddDialog = () => {
   editingTodo.value = null
   const now = moment()
@@ -500,29 +453,9 @@ const updateCronExpression = () => {
   formData.value.cronExpression = `${minute} ${hour} ${day} ${month} ${weekday}`
 }
 
-let isWorkerInitialized = false
-
-onMounted(() => {
-  setOnReminderDoneCallback(onReminderDone)
-  initWorker()
-  isWorkerInitialized = true
-})
-
 watch(() => reminderStore.todos, () => {
-  if (isWorkerInitialized) {
-    worker?.postMessage({ type: 'reset' })
-    worker?.postMessage({ 
-      type: 'update', 
-      data: { 
-        todos: JSON.parse(JSON.stringify(todos.value)) 
-      } 
-    })
-  }
+  refreshWorker(reminderStore.todos)
 }, { deep: true })
-
-onUnmounted(() => {
-  stopWorker()
-})
 </script>
 
 <style lang="less" scoped>

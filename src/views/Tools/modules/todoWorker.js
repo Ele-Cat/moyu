@@ -1,12 +1,7 @@
 let timer = null
 let todos = []
-let lastCheckMinute = -1
-let lastCheckTime = 0
-const remindedCronIds = new Set()
-const remindedTimeIds = new Set()
-const activeReminders = new Set()
-const cooldownCronIds = new Set()
-const newCronIds = new Set()
+let initializedCronIds = new Set()
+let activeReminderIds = new Set()
 
 self.onmessage = function(e) {
   const { type, data } = e.data
@@ -14,14 +9,13 @@ self.onmessage = function(e) {
   switch(type) {
     case 'start':
       todos = data.todos || []
-      lastCheckMinute = -1
-      lastCheckTime = 0
-      remindedCronIds.clear()
-      cooldownCronIds.clear()
-      newCronIds.clear()
       todos.forEach(todo => {
         if (todo.runMode === 'cron') {
-          newCronIds.add(todo.id)
+          if (!initializedCronIds.has(todo.id)) {
+            todo._createdMinute = new Date().getHours() * 60 + new Date().getMinutes()
+            todo._lastRemindedMinute = -1
+            initializedCronIds.add(todo.id)
+          }
         }
       })
       startTimer()
@@ -32,46 +26,34 @@ self.onmessage = function(e) {
       break
       
     case 'update':
-      const oldIds = new Set(todos.map(t => t.id))
       todos = data.todos || []
       todos.forEach(todo => {
-        if (todo.runMode === 'cron' && !oldIds.has(todo.id)) {
-          newCronIds.add(todo.id)
+        if (todo.runMode === 'cron') {
+          if (!initializedCronIds.has(todo.id)) {
+            todo._createdMinute = new Date().getHours() * 60 + new Date().getMinutes()
+            todo._lastRemindedMinute = -1
+            initializedCronIds.add(todo.id)
+          }
         }
       })
       break
       
-    case 'check':
-      checkTodos()
-      break
-      
-    case 'reset':
-      remindedCronIds.clear()
-      remindedTimeIds.clear()
-      lastCheckMinute = -1
-      lastCheckTime = 0
-      break
-
     case 'activeReminder':
       if (data && data.id) {
-        activeReminders.add(data.id)
+        activeReminderIds.add(data.id)
       }
       break
       
     case 'closedReminder':
       if (data && data.id) {
-        activeReminders.delete(data.id)
-        newCronIds.delete(data.id)
-        cooldownCronIds.add(data.id)
+        activeReminderIds.delete(data.id)
       }
       break
   }
 }
 
 function startTimer() {
-  if (timer) {
-    clearInterval(timer)
-  }
+  if (timer) return
   timer = setInterval(() => {
     checkTodos()
   }, 1000)
@@ -86,46 +68,19 @@ function stopTimer() {
 
 function checkTodos() {
   const now = new Date()
-  const currentMinute = now.getMinutes()
-  const currentTime = now.getTime()
-  
-  if (currentMinute !== lastCheckMinute) {
-    lastCheckMinute = currentMinute
-    remindedCronIds.clear()
-    const nextMinute = (currentMinute + 1) % 60
-    todos.forEach(todo => {
-      if (todo.runMode === 'cron' && !matchesCronAtMinute(todo.cronExpression, currentMinute) && !matchesCronAtMinute(todo.cronExpression, nextMinute)) {
-        cooldownCronIds.delete(todo.id)
-      }
-    })
-  }
-
-  const timeSinceLastCheck = currentTime - lastCheckTime
-  const isSystemSleep = lastCheckTime > 0 && timeSinceLastCheck > 120000
-  
-  if (isSystemSleep) {
-    console.log('检测到系统休眠或时间跳过，跳过本次检查')
-    lastCheckTime = currentTime
-    return
-  }
-  
-  lastCheckTime = currentTime
+  const nowTimestamp = Date.now()
+  const currentMinute = now.getHours() * 60 + now.getMinutes()
   
   todos.forEach(todo => {
     if (todo.status !== 'pending') return
-
-    if (activeReminders.has(todo.id)) {
-      return
-    }
+    
+    if (activeReminderIds.has(todo.id)) return
     
     if (todo.runMode === 'time') {
       const scheduleTime = new Date(todo.scheduleTime)
-      const timeDiff = scheduleTime.getTime() - now.getTime()
-      const timeKey = `${todo.id}_${scheduleTime.getTime()}`
+      const timeDiff = scheduleTime.getTime() - nowTimestamp
       
-      if (timeDiff <= 0 && timeDiff > -10000 && !remindedTimeIds.has(timeKey)) {
-        remindedTimeIds.add(timeKey)
-        activeReminders.add(todo.id)
+      if (timeDiff <= 0 && timeDiff > -10000) {
         self.postMessage({
           type: 'remind',
           data: {
@@ -138,42 +93,39 @@ function checkTodos() {
             runMode: todo.runMode
           }
         })
+        todo.status = 'reminded'
+        activeReminderIds.add(todo.id)
       }
     } else if (todo.runMode === 'cron') {
-      if (cooldownCronIds.has(todo.id)) {
+      const createdMinute = todo._createdMinute
+      const lastRemindedMinute = todo._lastRemindedMinute
+      
+      if (createdMinute === undefined) {
+        todo._createdMinute = currentMinute
+        todo._lastRemindedMinute = -1
         return
       }
       
-      if (newCronIds.has(todo.id)) {
-        return
-      }
-      
-      const cronKey = `${todo.id}_${currentMinute}`
-      
-      if (matchesCron(todo.cronExpression, now) && !remindedCronIds.has(cronKey)) {
-        remindedCronIds.add(cronKey)
-        activeReminders.add(todo.id)
-        self.postMessage({
-          type: 'remind',
-          data: {
-            id: todo.id,
-            title: todo.title,
-            description: todo.description,
-            time: now.toISOString(),
-            position: todo.position,
-            message: `提醒：${todo.title}`,
-            runMode: todo.runMode
-          }
-        })
+      if (matchesCron(todo.cronExpression, now)) {
+        if (currentMinute !== lastRemindedMinute && currentMinute !== createdMinute) {
+          self.postMessage({
+            type: 'remind',
+            data: {
+              id: todo.id,
+              title: todo.title,
+              description: todo.description,
+              time: now.toISOString(),
+              position: todo.position,
+              message: `提醒：${todo.title}`,
+              runMode: todo.runMode
+            }
+          })
+          todo._lastRemindedMinute = currentMinute
+          activeReminderIds.add(todo.id)
+        }
       }
     }
   })
-}
-
-function matchesCronAtMinute(expression, minute) {
-  const parts = expression.split(' ')
-  if (parts.length !== 5) return false
-  return matchCronField(minute, parts[0])
 }
 
 function matchesCron(expression, date) {
