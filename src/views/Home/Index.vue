@@ -1,52 +1,201 @@
 <template>
   <div class="home">
-    <div class="modules">
-      <div class="module-card" @click="goTo('/novel')">
-        <div class="module-icon">📖</div>
-        <div class="module-name">小说阅读</div>
-        <div class="module-desc">本地txt小说阅读</div>
-      </div>
+    <draggable
+      v-model="homeStore.modules"
+      class="modules"
+      item-key="id"
+      :animation="100"
+      ghost-class="ghost"
+      :forceFallback="true"
+      :fallback-tolerance="8"
+      :delay="10"
+      handle=".module-card"
+      @end="onDragEnd"
+    >
+      <template #item="{ element: module }">
+        <div
+          class="module-card"
+          :class="{ 'is-folder': module.isFolder }"
+          @click="handleClick(module)"
+          @contextmenu.prevent="handleContextMenu($event, module)"
+        >
+          <div class="module-content">
+            <div class="module-icon">{{ module.icon }}</div>
+            <div class="module-name">{{ module.name }}</div>
+            <div class="module-desc" v-if="!module.isFolder">{{ module.desc }}</div>
+          </div>
+        </div>
+      </template>
+    </draggable>
 
-      <div class="module-card" @click="goTo('/music')">
-        <div class="module-icon">🎵</div>
-        <div class="module-name">音乐播放</div>
-        <div class="module-desc">本地音乐播放</div>
-      </div>
+    <el-dialog v-model="showAddDialog" title="添加模块" width="400px">
+      <el-form :model="formData" label-width="80px">
+        <el-form-item label="类型">
+          <el-radio-group v-model="formData.isFolder">
+            <el-radio :value="false">应用</el-radio>
+            <el-radio :value="true">文件夹</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="名称">
+          <el-input v-model="formData.name" placeholder="请输入名称" />
+        </el-form-item>
+        <el-form-item label="图标">
+          <el-input v-model="formData.icon" placeholder="请输入图标emoji" />
+        </el-form-item>
+        <el-form-item label="描述" v-if="!formData.isFolder">
+          <el-input v-model="formData.desc" placeholder="请输入描述" />
+        </el-form-item>
+        <el-form-item label="路径" v-if="!formData.isFolder">
+          <el-input v-model="formData.path" placeholder="请输入路径，如 /novel" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showAddDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleAddModule">确定</el-button>
+      </template>
+    </el-dialog>
 
-      <div class="module-card" @click="goTo('/news')">
-        <div class="module-icon">📰</div>
-        <div class="module-name">热点新闻</div>
-        <div class="module-desc">实时热点资讯</div>
-      </div>
-
-      <div class="module-card" @click="goTo('/tools')">
-        <div class="module-icon">🛠️</div>
-        <div class="module-name">实用工具</div>
-        <div class="module-desc">倒计时/剪贴板</div>
-      </div>
-
-      <div class="module-card" @click="goTo('/wallpaper')">
-        <div class="module-icon">🖼️</div>
-        <div class="module-name">桌面壁纸</div>
-        <div class="module-desc">静态/动态壁纸</div>
-      </div>
-    </div>
-
-    <footer class="footer">
-      <span>老板键: Ctrl+~ (隐藏窗口)</span>
-      <span>点击关闭按钮最小化到托盘</span>
-    </footer>
+    <el-dialog v-model="showEditDialog" title="编辑模块" width="400px">
+      <el-form :model="editingModule" label-width="80px">
+        <el-form-item label="类型">
+          <el-radio-group v-model="editingModule.isFolder" disabled>
+            <el-radio :value="false">应用</el-radio>
+            <el-radio :value="true">文件夹</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="名称">
+          <el-input v-model="editingModule.name" placeholder="请输入名称" />
+        </el-form-item>
+        <el-form-item label="图标">
+          <el-input v-model="editingModule.icon" placeholder="请输入图标emoji" />
+        </el-form-item>
+        <el-form-item label="描述" v-if="!editingModule.isFolder">
+          <el-input v-model="editingModule.desc" placeholder="请输入描述" />
+        </el-form-item>
+        <el-form-item label="路径" v-if="!editingModule.isFolder">
+          <el-input v-model="editingModule.path" placeholder="请输入路径" />
+        </el-form-item>
+        <el-form-item label="宽度" v-if="!editingModule.isFolder">
+          <el-input-number v-model="editingModule.width" :min="1" :max="3" />
+        </el-form-item>
+        <el-form-item label="高度" v-if="!editingModule.isFolder">
+          <el-input-number v-model="editingModule.height" :min="1" :max="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleEditModule">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-defineOptions({ name: 'Home' })
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Rank } from '@element-plus/icons-vue'
+import draggable from 'vuedraggable'
+import { useHomeStore } from '@/stores/modules/home'
+
+defineOptions({ name: 'Home' })
 
 const router = useRouter()
+const homeStore = useHomeStore()
 
-function goTo(path) {
-  router.push(path)
+const showAddDialog = ref(false)
+const showEditDialog = ref(false)
+const editingModule = ref(null)
+
+const formData = reactive({
+  name: '',
+  icon: '',
+  desc: '',
+  path: '',
+  isFolder: false
+})
+
+function handleClick(module) {
+  if (module.isFolder) {
+    ElMessage.info('文件夹功能开发中')
+  } else {
+    router.push(module.path)
+  }
+}
+
+function handleContextMenu(event, module) {
+  editingModule.value = { ...module }
+  
+  ElMessageBox.confirm('', '', {
+    confirmButtonText: '编辑',
+    cancelButtonText: '删除',
+    distinguishCancelAndClose: true,
+    callback: (action) => {
+      if (action === 'confirm') {
+        showEditDialog.value = true
+      } else if (action === 'cancel') {
+        handleDelete(module)
+      }
+    }
+  })
+}
+
+async function handleDelete(module) {
+  try {
+    await ElMessageBox.confirm(`确定要删除「${module.name}」吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    homeStore.removeModule(module.id)
+    ElMessage.success('删除成功')
+  } catch {
+    // 用户取消
+  }
+}
+
+function handleAddModule() {
+  if (!formData.name || !formData.icon) {
+    ElMessage.warning('请填写名称和图标')
+    return
+  }
+  
+  if (!formData.isFolder && !formData.path) {
+    ElMessage.warning('请填写路径')
+    return
+  }
+  
+  homeStore.addModule({
+    name: formData.name,
+    icon: formData.icon,
+    desc: formData.desc || '',
+    path: formData.path || '',
+    isFolder: formData.isFolder
+  })
+  
+  ElMessage.success('添加成功')
+  showAddDialog.value = false
+  
+  formData.name = ''
+  formData.icon = ''
+  formData.desc = ''
+  formData.path = ''
+  formData.isFolder = false
+}
+
+function handleEditModule() {
+  if (!editingModule.value.name || !editingModule.value.icon) {
+    ElMessage.warning('请填写名称和图标')
+    return
+  }
+  
+  homeStore.updateModule(editingModule.value.id, editingModule.value)
+  ElMessage.success('更新成功')
+  showEditDialog.value = false
+}
+
+function onDragEnd() {
+  ElMessage.success('排序已更新')
 }
 </script>
 
@@ -60,45 +209,66 @@ function goTo(path) {
 
 .modules {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 20px;
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
   width: 100%;
-  align-content: center;
+  align-content: flex-start;
 }
 
 .module-card {
+  position: relative;
+  width: calc(33.333% - 14px);
+  height: 120px;
+  box-sizing: border-box;
   background: #fff;
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   }
+
+  &.is-folder {
+    background: linear-gradient(135deg, #fff7e6 0%, #fff0dc 100%);
+  }
+
+  &.ghost {
+    opacity: 0.5;
+    background: #f0f0f0;
+  }
 }
 
-.module-icon {
-  font-size: 42px;
-  margin-bottom: 12px;
-}
+.module-content {
+  .module-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
 
-.module-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 6px;
-}
+  .module-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+  }
 
-.module-desc {
-  font-size: 13px;
-  color: #888;
+  .module-desc {
+    font-size: 12px;
+    color: #888;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .footer {
