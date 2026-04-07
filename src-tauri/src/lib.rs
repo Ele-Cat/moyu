@@ -406,7 +406,7 @@ fn create_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let _tray = TrayIconBuilder::new()
         .icon(app.default_window_icon().cloned().unwrap())
         .menu(&menu)
-        .tooltip("摸鱼日常")
+        .tooltip("AiO")
         // 阻止左键点击时显示菜单
         .show_menu_on_left_click(false)
         // 左键点击显示主窗口

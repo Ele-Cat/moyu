@@ -4,7 +4,7 @@
       <div class="app-icon">
         <img src="/icon.ico" alt="icon" />
       </div>
-      <h4>摸鱼日常</h4>
+      <h4>AiO</h4>
       <p>版本 0.1.0</p>
       <p class="desc">一款实用的桌面摸鱼小工具</p>
     </div>

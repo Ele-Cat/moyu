@@ -2,7 +2,7 @@
   <header class="titlebar" data-tauri-drag-region>
     <div class="titlebar-left">
       <img src="/icon.ico" alt="icon" class="iconbar" />
-      <span class="title">摸鱼日常</span>
+      <span class="title">AiO</span>
     </div>
     <TitleBarButtons />
   </header>
