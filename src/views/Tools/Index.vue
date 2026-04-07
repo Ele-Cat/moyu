@@ -43,6 +43,7 @@ import { ArrowLeft, QuestionFilled } from '@element-plus/icons-vue'
 import CountdownTool from './modules/CountdownTool.vue'
 import ClipboardTool from './modules/ClipboardTool.vue'
 import TodoReminder from './modules/TodoReminder.vue'
+import TranslationTool from './modules/TranslationTool.vue'
 
 defineOptions({ name: 'Tools' })
 
@@ -73,6 +74,14 @@ const tools = [
     desc: '设置待办任务和提醒',
     help: `<p>待办提醒功能支持两种运行方式：</p><p>1. 指定时间：设置具体的日期时间，到点提醒</p><p>2. CRON表达式：支持复杂的定时任务，如每天9点执行</p><p>支持傻瓜式CRON配置，无需手动编写表达式</p><p>待办任务保存在本地存储中，刷新页面不会丢失</p>`,
     component: markRaw(TodoReminder)
+  },
+  {
+    id: 'translation',
+    name: '翻译工具',
+    icon: '🌐',
+    desc: '多语言翻译',
+    help: `<p>支持多语言翻译</p><p>选择源语言和目标语言，输入要翻译的内容即可</p><p>点击交换按钮可以快速交换源语言和目标语言</p>`,
+    component: markRaw(TranslationTool)
   }
 ]
 

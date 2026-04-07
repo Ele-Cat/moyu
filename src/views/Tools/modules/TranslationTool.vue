@@ -1,12 +1,12 @@
 <template>
   <div class="translation-tool">
     <div class="translation-header">
-      <el-select v-model="fromLang" placeholder="源语言" @change="handleLangChange">
+      <el-select v-model="fromLang" placeholder="源语言" filterable @change="handleLangChange">
         <el-option label="自动检测" value="auto" />
         <el-option v-for="lang in languages" :key="lang.code" :label="lang.label" :value="lang.code" />
       </el-select>
       <el-button type="primary" :icon="Sort" circle @click="swapLanguages" class="swap-btn" />
-      <el-select v-model="toLang" placeholder="目标语言" @change="handleLangChange">
+      <el-select v-model="toLang" placeholder="目标语言" filterable @change="handleLangChange">
         <el-option v-for="lang in languages" :key="lang.code" :label="lang.label" :value="lang.code" />
       </el-select>
     </div>
@@ -49,6 +49,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Sort } from '@element-plus/icons-vue'
+import { get, post } from '@/utils/http'
 
 defineOptions({ name: 'TranslationTool' })
 
@@ -67,8 +68,7 @@ onMounted(async () => {
 
 async function fetchLanguages() {
   try {
-    const res = await fetch('https://60s.viki.moe/v2/fanyi/langs')
-    const data = await res.json()
+    const data = await get('https://60s.viki.moe/v2/fanyi/langs')
     if (data.code === 200) {
       languages.value = data.data
     }
@@ -117,19 +117,7 @@ async function doTranslate() {
   translating.value = true
   
   try {
-    const res = await fetch('https://60s.viki.moe/v2/fanyi', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: sourceText.value,
-        from: fromLang.value,
-        to: toLang.value
-      })
-    })
-    
-    const data = await res.json()
+    const data = await get(`https://60s.viki.moe/v2/fanyi?text=${sourceText.value}&from=${fromLang.value}&to=${toLang.value}`)
     
     if (data.code === 200) {
       targetText.value = data.data.target.text
