@@ -1,12 +1,12 @@
 <template>
   <div class="search">
     <div class="search-box">
-      <input
+      <el-input
         v-model="searchKeyword"
         placeholder="输入书名或作者搜索..."
         @keyup.enter="searchBooks"
       />
-      <button @click="searchBooks">搜索</button>
+      <el-button type="primary" @click="searchBooks">搜索</el-button>
     </div>
 
     <div v-if="currentSource" class="current-source">
@@ -19,28 +19,28 @@
 
     <div v-if="searching" class="loading">搜索中...</div>
 
-    <div v-else-if="searchResults.length > 0" class="book-list">
-      <div
-        v-for="book in searchResults"
-        :key="book.bookUrl + book.sourceUrl"
-        class="book-item"
-        @click="$emit('select-book', book)"
-      >
-        <img
-          v-if="book.coverUrl"
-          :src="book.coverUrl"
-          class="book-cover"
-          @error="book.coverUrl = ''"
-        />
-        <div v-else class="book-cover placeholder">📖</div>
-        <div class="book-info">
-          <div class="book-name">{{ book.bookName }}</div>
-          <div class="book-author">{{ book.author }}</div>
-        {{ book.coverUrl }}
-
+    <el-scrollbar v-else-if="searchResults.length > 0" class="book-list-scrollbar">
+      <div class="book-list">
+        <div
+          v-for="book in searchResults"
+          :key="book.bookUrl + book.sourceUrl"
+          class="book-item"
+          @click="$emit('select-book', book)"
+        >
+          <img
+            v-if="book.coverUrl"
+            :src="book.coverUrl"
+            class="book-cover"
+            @error="book.coverUrl = ''"
+          />
+          <div v-else class="book-cover placeholder">📖</div>
+          <div class="book-info">
+            <div class="book-name">{{ book.bookName }}</div>
+            <div class="book-author">{{ book.author }} · {{ book.wordCount }}</div>
+          </div>
         </div>
       </div>
-    </div>
+    </el-scrollbar>
 
     <div v-else-if="searched && searchResults.length === 0" class="no-result">
       未找到相关书籍
@@ -53,7 +53,7 @@ import { ref, computed } from 'vue'
 import { fetchUrl } from '@/utils/http'
 import { request } from '@/hooks/useApi'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
-import { buildSearchUrl, parseSearchResult, parseHeader } from '@/views/NovelReader/utils'
+import { buildSearchUrl, parseSearchResultAsync, parseHeader } from '@/views/NovelReader/utils'
 
 const emit = defineEmits(['select-book', 'change-tab'])
 
@@ -100,14 +100,12 @@ async function searchBooks() {
       headers['Content-Type'] = headers['Content-Type'] || 'application/x-www-form-urlencoded'
     }
     
-    // const res = await fetchUrl(searchConfig.url, requestOptions)
-    
     // 使用后端 API 备选（如果前端 fetch 失败）
     try {
       const requestOptions = {
         url: searchConfig.url,
         method: searchConfig.method || 'GET',
-        headers: headers,
+        // headers: headers,
         return_type: 'text'
       }
       if (searchConfig.body) {
@@ -115,6 +113,7 @@ async function searchBooks() {
       }
       
       const res = await request(requestOptions)
+      // const res = await fetchUrl(searchConfig.url, requestOptions)
       console.log('res:', res)
 
       if (res) {
@@ -122,7 +121,7 @@ async function searchBooks() {
         console.log('source: ', source);
         console.log('搜索规则:', ruleSearch)
         
-        const results = parseSearchResult(res, ruleSearch, source.bookSourceUrl)
+        const results = await parseSearchResultAsync(res, ruleSearch, source.bookSourceUrl)
         console.log('解析结果数量:', results.length)
         console.log('解析结果:', results)
         
@@ -153,7 +152,6 @@ async function searchBooks() {
 
 <style lang="less" scoped>
 .search {
-  padding: 15px;
   height: 100%;
   overflow-y: auto;
 }
@@ -162,29 +160,6 @@ async function searchBooks() {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
-
-  input {
-    flex: 1;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 25px;
-    outline: none;
-    font-size: 14px;
-
-    &:focus {
-      border-color: #667eea;
-    }
-  }
-
-  button {
-    padding: 10px 25px;
-    background: #667eea;
-    color: #fff;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 14px;
-  }
 }
 
 .current-source {
@@ -219,6 +194,10 @@ async function searchBooks() {
   padding: 40px;
   color: #888;
   font-size: 14px;
+}
+
+.book-list-scrollbar {
+  height: calc(100% - 120px);
 }
 
 .book-list {

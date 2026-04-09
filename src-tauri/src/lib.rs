@@ -8,6 +8,7 @@ use tauri::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
+use wallpaper::set_from_path;
 
 /// 应用状态管理结构体
 #[derive(Default)]
@@ -285,7 +286,246 @@ fn read_novel_content(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("读取文件失败: {}", e))
 }
 
-use wallpaper::set_from_path;
+/// HTML 解析选项
+#[derive(Deserialize)]
+pub struct ParseHtmlOptions {
+    html: String,
+    selector: String,
+    attr: Option<String>,
+}
+
+#[tauri::command]
+/// 解析 HTML（使用 scraper 库）
+fn parse_html(options: ParseHtmlOptions) -> Result<Vec<String>, String> {
+    use scraper::{Html, Selector};
+    
+    let document = Html::parse_document(&options.html);
+    let selector = Selector::parse(&options.selector)
+        .map_err(|e| format!("选择器解析失败: {}", e))?;
+    
+    let mut results = Vec::new();
+    
+    for element in document.select(&selector) {
+        let text = if let Some(attr) = &options.attr {
+            if attr == "text" || attr == "textContent" {
+                element.text().collect::<Vec<_>>().join("").trim().to_string()
+            } else if attr == "html" || attr == "innerHTML" {
+                element.html()
+            } else {
+                element.value().attr(attr).unwrap_or("").to_string()
+            }
+        } else {
+            element.text().collect::<Vec<_>>().join("").trim().to_string()
+        };
+        
+        results.push(text);
+    }
+    
+    Ok(results)
+}
+
+fn parse_selector_with_index(selector: &str) -> (String, Option<i32>) {
+    if let Some(pos) = selector.rfind('.') {
+        let after_dot = &selector[pos+1..];
+        if after_dot.chars().all(|c| c.is_ascii_digit() || c == '-') {
+            if let Ok(idx) = after_dot.parse::<i32>() {
+                return (selector[..pos].to_string(), Some(idx));
+            }
+        }
+    }
+    (selector.to_string(), None)
+}
+
+#[tauri::command]
+/// 从元素中提取文本或属性（使用 scraper 库）
+fn extract_element(html: String, rule: String) -> Result<String, String> {
+    use scraper::{Html, Selector};
+    
+    let document = Html::parse_document(&html);
+    
+    // 解析 Legado 风格的规则: tag.class@attr
+    // 例如: dd@a@text, dt@a@href, img@data-src, dd.0, span.0:-1@text
+    
+    let parts: Vec<&str> = rule.split('@').collect();
+    
+    if parts.is_empty() {
+        return Err("无效的规则".to_string());
+    }
+    
+    // 构建选择器
+    let mut css_selector = parts[0].to_string();
+    
+    // 处理索引，例如 dd.1 表示第二个 dd，span.0:-1 表示第0个span里的-1索引
+    let mut index = 0;
+    let mut inner_index = 0;
+    let mut has_inner_index = false;
+    
+    // 先检查是否有 :- 分隔的格式，如 span.0:-1
+    if let Some(pos) = css_selector.rfind(":-") {
+        if let Ok(idx) = css_selector[pos+2..].parse::<i32>() {
+            inner_index = idx;
+            has_inner_index = true;
+            css_selector = css_selector[..pos].to_string();
+        }
+    }
+    
+    // 然后检查数字索引，如 dd.1 或 dd.0
+    if let Some(pos) = css_selector.rfind('.') {
+        let after_dot = &css_selector[pos+1..];
+        // 检查是否是纯数字
+        if after_dot.chars().all(|c| c.is_ascii_digit()) {
+            if let Ok(idx) = after_dot.parse::<i32>() {
+                index = idx;
+                css_selector = css_selector[..pos].to_string();
+            }
+        }
+    }
+    
+    let selector = Selector::parse(&css_selector)
+        .map_err(|e| format!("选择器解析失败: {}", e))?;
+    
+    let elements: Vec<_> = document.select(&selector).collect();
+    
+    if elements.is_empty() {
+        return Ok("".to_string());
+    }
+    
+    // 如果有后续规则（如 dd@a@text），需要特殊处理
+    // 需要找到包含目标子元素的父元素
+    if parts.len() > 1 && parts[1] != "text" && !parts[1].starts_with("data-") && parts[1] != "href" && parts[1] != "src" && parts[1] != "html" && parts[1] != "all" {
+        let target_rule = parts[1];
+        
+        // 解析目标规则，可能包含索引如 span.1
+        let (target_tag, target_idx) = parse_selector_with_index(target_rule);
+        
+        // 遍历所有匹配的元素，找到第一个包含目标子元素的
+        for el in &elements {
+            // 获取所有匹配目标标签的子元素
+            if let Ok(target_selector) = Selector::parse(&target_tag) {
+                let target_elements: Vec<_> = el.select(&target_selector).collect();
+                
+                if !target_elements.is_empty() {
+                    let target_el = if let Some(idx) = target_idx {
+                        // 处理索引
+                        let idx = if idx < 0 {
+                            if target_elements.len() as i32 + idx < 0 {
+                                continue;
+                            }
+                            (target_elements.len() as i32 + idx) as usize
+                        } else {
+                            idx as usize
+                        };
+                        
+                        if idx >= target_elements.len() {
+                            continue;
+                        }
+                        &target_elements[idx]
+                    } else {
+                        &target_elements[0]
+                    };
+                    
+                    // 如果还有后续规则
+                    if parts.len() > 2 {
+                        return extract_from_element(target_el, &parts[2..]);
+                    } else {
+                        return Ok(target_el.text().collect::<Vec<_>>().join("").trim().to_string());
+                    }
+                }
+            }
+        }
+        
+        // 如果没找到，返回空
+        return Ok("".to_string());
+    }
+    
+    // 处理索引
+    let idx = if index < 0 {
+        if elements.len() as i32 + index < 0 {
+            return Ok("".to_string());
+        }
+        (elements.len() as i32 + index) as usize
+    } else {
+        index as usize
+    };
+    
+    if idx >= elements.len() {
+        return Ok("".to_string());
+    }
+    
+    let mut current = elements[idx];
+    
+    // 如果有内部索引（如 span.0:-1），需要从 current 中再查找
+    if has_inner_index {
+        let inner_selector = Selector::parse(&css_selector)
+            .map_err(|e| format!("内部选择器解析失败: {}", e))?;
+        let inner_elements: Vec<_> = current.select(&inner_selector).collect();
+        
+        if !inner_elements.is_empty() {
+            let inner_idx = if inner_index < 0 {
+                if inner_elements.len() as i32 + inner_index < 0 {
+                    return Ok("".to_string());
+                }
+                (inner_elements.len() as i32 + inner_index) as usize
+            } else {
+                inner_index as usize
+            };
+            
+            if inner_idx < inner_elements.len() {
+                current = inner_elements[inner_idx];
+            }
+        }
+    }
+    
+    // 如果有后续规则
+    if parts.len() > 1 {
+        return extract_from_element(&current, &parts[1..]);
+    }
+    
+    // 返回当前元素的文本
+    Ok(current.text().collect::<Vec<_>>().join("").trim().to_string())
+}
+
+fn extract_from_element(element: &scraper::ElementRef, parts: &[&str]) -> Result<String, String> {
+    use scraper::Selector;
+    
+    if parts.is_empty() {
+        return Ok(element.text().collect::<Vec<_>>().join("").trim().to_string());
+    }
+    
+    let part = parts[0];
+    
+    if part == "text" || part == "textNodes" {
+        return Ok(element.text().collect::<Vec<_>>().join("").trim().to_string());
+    }
+    
+    if part == "ownText" {
+        let text = element.text().collect::<Vec<_>>().join("");
+        let inner = element.inner_html();
+        return Ok(text.replace(&inner, "").trim().to_string());
+    }
+    
+    if part == "href" || part == "src" {
+        return Ok(element.value().attr(part).unwrap_or("").to_string());
+    }
+    
+    if part.starts_with("data-") {
+        return Ok(element.value().attr(part).unwrap_or("").to_string());
+    }
+    
+    if part == "html" || part == "all" {
+        return Ok(element.inner_html());
+    }
+    
+    // 处理子选择器
+    if let Ok(child_selector) = Selector::parse(part) {
+        if let Some(child) = element.select(&child_selector).next() {
+            return extract_from_element(&child, &parts[1..]);
+        }
+    }
+    
+    // 没找到，返回当前元素的文本
+    Ok(element.text().collect::<Vec<_>>().join("").trim().to_string())
+}
 
 #[tauri::command]
 /// 设置桌面壁纸（支持网络图片）
@@ -504,6 +744,8 @@ pub fn run() {
             set_wallpaper,
             download_file,
             refresh_wallpaper,
+            parse_html,
+            extract_element,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

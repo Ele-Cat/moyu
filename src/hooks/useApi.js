@@ -50,3 +50,11 @@ export async function put(url, body, headers) {
 export async function del(url, headers) {
   return await request({ url, method: 'DELETE', headers })
 }
+
+export async function parseHtml(options) {
+  return await invoke('parse_html', { options })
+}
+
+export async function extractElement(html, rule) {
+  return await invoke('extract_element', { html, rule })
+}

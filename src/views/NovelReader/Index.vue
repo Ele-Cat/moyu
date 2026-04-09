@@ -1,30 +1,6 @@
 <template>
   <div class="novel-reader">
-    <div class="reader-header">
-      <div class="tabs">
-        <div
-          class="tab"
-          :class="{ active: activeTab === 'bookshelf' }"
-          @click="activeTab = 'bookshelf'"
-        >
-          书架
-        </div>
-        <div
-          class="tab"
-          :class="{ active: activeTab === 'search' }"
-          @click="activeTab = 'search'"
-        >
-          搜索
-        </div>
-        <div
-          class="tab"
-          :class="{ active: activeTab === 'sourceManage' }"
-          @click="activeTab = 'sourceManage'"
-        >
-          书源
-        </div>
-      </div>
-    </div>
+    <CategoryTabs v-model="activeTab" :categories="categories" />
 
     <div class="reader-content">
       <Bookshelf
@@ -156,9 +132,16 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
 import { buildSearchUrl, parseSearchResult, parseHeader, buildCatalogUrl, parseCatalog, buildContentUrl, parseContent } from '@/views/NovelReader/utils'
+import CategoryTabs from '@/components/CategoryTabs/Index.vue'
 import Bookshelf from './modules/Bookshelf.vue'
 import Search from './modules/Search.vue'
 import SourceManage from './modules/SourceManage.vue'
+
+const categories = [
+  { id: 'bookshelf', category: '书架' },
+  { id: 'search', category: '搜索' },
+  { id: 'sourceManage', category: '书源' }
+]
 
 const bookSourceStore = useBookSourceStore()
 
@@ -390,40 +373,12 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
   background: var(--bg-color, #f5f5f5);
-}
-
-.reader-header {
-  padding: 10px;
-  background: #fff;
-  border-bottom: 1px solid #eee;
-}
-
-.tabs {
-  display: flex;
-  gap: 10px;
-}
-
-.tab {
-  padding: 8px 20px;
-  cursor: pointer;
-  border-radius: 20px;
-  transition: all 0.3s;
-  font-size: 14px;
-
-  &.active {
-    background: #667eea;
-    color: #fff;
-  }
-
-  &:hover:not(.active) {
-    background: #f0f0f0;
-  }
+  padding: 15px;
 }
 
 .reader-content {
   flex: 1;
   overflow: hidden;
-  background: #f5f5f5;
 }
 
 .book-detail {

@@ -1,12 +1,12 @@
 <template>
   <div class="source-manage">
     <div class="source-actions">
-      <button @click="importSource">📥 导入书源</button>
-      <button @click="exportSource">📤 导出书源</button>
+      <el-button type="primary" round :icon="Download" @click="importSource">导入书源</el-button>
+      <el-button type="primary" round :icon="Upload" @click="exportSource">导出书源</el-button>
     </div>
 
     <div class="source-search">
-      <input
+      <el-input
         v-model="searchText"
         placeholder="搜索书源..."
         class="search-input"
@@ -63,6 +63,7 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog'
 import { readTextFile } from '@tauri-apps/plugin-fs'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
 import { ElMessage } from 'element-plus'
+import { Upload, Download } from '@element-plus/icons-vue'
 
 const bookSourceStore = useBookSourceStore()
 
@@ -158,48 +159,17 @@ async function testSource(source) {
 
 <style lang="less" scoped>
 .source-manage {
-  padding: 15px;
   height: 100%;
   overflow-y: auto;
 }
 
 .source-actions {
   display: flex;
-  gap: 10px;
   margin-bottom: 15px;
-
-  button {
-    padding: 10px 20px;
-    background: #667eea;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-
-    &:hover {
-      background: #5a6fd6;
-    }
-  }
 }
 
 .source-search {
   margin-bottom: 15px;
-
-  .search-input {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-
-    &:focus {
-      border-color: #667eea;
-    }
-  }
 }
 
 .source-list {
