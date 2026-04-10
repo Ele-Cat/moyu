@@ -131,7 +131,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useBookSourceStore } from '@/stores/modules/bookSource'
-import { buildSearchUrl, parseSearchResult, parseHeader, buildCatalogUrl, parseCatalog, buildContentUrl, parseContent } from '@/views/NovelReader/utils'
+import { buildSearchUrl, parseSearchResultAsync, parseHeader, buildCatalogUrl, parseCatalog, buildContentUrl, parseContent } from '@/views/NovelReader/utils'
 import CategoryTabs from '@/components/CategoryTabs/Index.vue'
 import Bookshelf from './modules/Bookshelf.vue'
 import Search from './modules/Search.vue'

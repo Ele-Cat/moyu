@@ -36,7 +36,8 @@
           <div v-else class="book-cover placeholder">📖</div>
           <div class="book-info">
             <div class="book-name">{{ book.bookName }}</div>
-            <div class="book-author">{{ book.author }} · {{ book.wordCount }}</div>
+            <div class="book-author">作者：{{ book.author }} · {{ book.wordCount }}</div>
+            <div class="book-intro" :title="book.intro">简介：{{ book.intro }}</div>
           </div>
         </div>
       </div>
@@ -197,7 +198,7 @@ async function searchBooks() {
 }
 
 .book-list-scrollbar {
-  height: calc(100% - 120px);
+  height: calc(100% - 110px);
 }
 
 .book-list {
@@ -209,7 +210,7 @@ async function searchBooks() {
 .book-item {
   display: flex;
   gap: 12px;
-  padding: 12px;
+  padding: 10px;
   background: #fff;
   border-radius: 10px;
   cursor: pointer;
@@ -222,8 +223,8 @@ async function searchBooks() {
 }
 
 .book-cover {
-  width: 70px;
-  height: 95px;
+  width: 64px;
+  height: 90px;
   object-fit: cover;
   border-radius: 6px;
   flex-shrink: 0;
@@ -241,24 +242,34 @@ async function searchBooks() {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-width: 0;
 
   .book-name {
     font-size: 16px;
     font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     margin-bottom: 5px;
+  }
+
+  .book-author {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 3px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .book-author {
-    font-size: 13px;
+  .book-intro {
+    font-size: 12px;
     color: #888;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 }
 </style>

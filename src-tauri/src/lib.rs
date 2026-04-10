@@ -324,21 +324,43 @@ fn parse_html(options: ParseHtmlOptions) -> Result<Vec<String>, String> {
     Ok(results)
 }
 
-fn parse_selector_with_index(selector: &str) -> (String, Option<i32>) {
+fn parse_selector_with_index(selector: &str) -> (String, Option<i32>, Option<(i32, i32)>) {
+    // 检查是否是范围索引，如 span.0:-1
+    if let Some(pos) = selector.rfind(".-") {
+        let after_dash = &selector[pos+2..];
+        if after_dash.chars().all(|c| c.is_ascii_digit() || c == '-') {
+            let before_part = &selector[..pos];
+            // 再检查前半部分是否有 .
+            if let Some(inner_pos) = before_part.rfind('.') {
+                let inner_after_dot = &before_part[inner_pos+1..];
+                if inner_after_dot.chars().all(|c| c.is_ascii_digit()) {
+                    if let Ok(start_idx) = inner_after_dot.parse::<i32>() {
+                        if let Ok(end_idx) = after_dash.parse::<i32>() {
+                            let tag_part = &before_part[..inner_pos];
+                            return (tag_part.to_string(), None, Some((start_idx, end_idx)));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 普通索引，如 dd.1 或 span.1
     if let Some(pos) = selector.rfind('.') {
         let after_dot = &selector[pos+1..];
         if after_dot.chars().all(|c| c.is_ascii_digit() || c == '-') {
             if let Ok(idx) = after_dot.parse::<i32>() {
-                return (selector[..pos].to_string(), Some(idx));
+                return (selector[..pos].to_string(), Some(idx), None);
             }
         }
     }
-    (selector.to_string(), None)
+    (selector.to_string(), None, None)
 }
 
 #[tauri::command]
 /// 从元素中提取文本或属性（使用 scraper 库）
 fn extract_element(html: String, rule: String) -> Result<String, String> {
+    eprintln!("[extract_element] rule: {}", rule);
     use scraper::{Html, Selector};
     
     let document = Html::parse_document(&html);
@@ -395,8 +417,8 @@ fn extract_element(html: String, rule: String) -> Result<String, String> {
     if parts.len() > 1 && parts[1] != "text" && !parts[1].starts_with("data-") && parts[1] != "href" && parts[1] != "src" && parts[1] != "html" && parts[1] != "all" {
         let target_rule = parts[1];
         
-        // 解析目标规则，可能包含索引如 span.1
-        let (target_tag, target_idx) = parse_selector_with_index(target_rule);
+        // 解析目标规则，可能包含索引如 span.1 或范围如 span.0:-1
+        let (target_tag, target_idx, target_range) = parse_selector_with_index(target_rule);
         
         // 遍历所有匹配的元素，找到第一个包含目标子元素的
         for el in &elements {
@@ -405,8 +427,25 @@ fn extract_element(html: String, rule: String) -> Result<String, String> {
                 let target_elements: Vec<_> = el.select(&target_selector).collect();
                 
                 if !target_elements.is_empty() {
-                    let target_el = if let Some(idx) = target_idx {
-                        // 处理索引
+                    // 处理范围索引，如 span.0:-1 表示从第0个到倒数第1个的文本拼接
+                    if let Some((start_idx, end_idx)) = target_range {
+                        let mut results = Vec::new();
+                        let len = target_elements.len() as i32;
+                        let start = if start_idx < 0 { len + start_idx } else { start_idx };
+                        let end = if end_idx < 0 { len + end_idx + 1 } else { end_idx + 1 };
+                        
+                        for i in start..end {
+                            if i >= 0 && i < len {
+                                let text = target_elements[i as usize].text().collect::<Vec<_>>().join("").trim().to_string();
+                                results.push(text);
+                            }
+                        }
+                        
+                        if !results.is_empty() {
+                            return Ok(results.join(""));
+                        }
+                    } else if let Some(idx) = target_idx {
+                        // 处理单个索引
                         let idx = if idx < 0 {
                             if target_elements.len() as i32 + idx < 0 {
                                 continue;
@@ -419,16 +458,25 @@ fn extract_element(html: String, rule: String) -> Result<String, String> {
                         if idx >= target_elements.len() {
                             continue;
                         }
-                        &target_elements[idx]
+                        
+                        let target_el = &target_elements[idx];
+                        
+                        // 如果还有后续规则
+                        if parts.len() > 2 {
+                            return extract_from_element(target_el, &parts[2..]);
+                        } else {
+                            return Ok(target_el.text().collect::<Vec<_>>().join("").trim().to_string());
+                        }
                     } else {
-                        &target_elements[0]
-                    };
-                    
-                    // 如果还有后续规则
-                    if parts.len() > 2 {
-                        return extract_from_element(target_el, &parts[2..]);
-                    } else {
-                        return Ok(target_el.text().collect::<Vec<_>>().join("").trim().to_string());
+                        // 无索引，使用第一个
+                        let target_el = &target_elements[0];
+                        
+                        // 如果还有后续规则
+                        if parts.len() > 2 {
+                            return extract_from_element(target_el, &parts[2..]);
+                        } else {
+                            return Ok(target_el.text().collect::<Vec<_>>().join("").trim().to_string());
+                        }
                     }
                 }
             }
