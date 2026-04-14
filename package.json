@@ -21,6 +21,7 @@
     "@tauri-apps/plugin-store": "^2",
     "@vueuse/core": "^14.2.1",
     "axios": "1.14.0",
+    "cheerio": "^1.2.0",
     "element-plus": "^2.13.5",
     "moment": "^2.30.1",
     "pinia": "^3.0.4",

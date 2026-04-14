@@ -58,3 +58,7 @@ export async function parseHtml(options) {
 export async function extractElement(html, rule) {
   return await invoke('extract_element', { html, rule })
 }
+
+export async function parseBookList(options) {
+  return await invoke('parse_book_list', { options })
+}

@@ -3,7 +3,7 @@
  * Cookie 管理、URL 处理等
  */
 
-import { extractElement } from '@/hooks/useApi'
+import * as cheerio from 'cheerio'
 
 const cookieStore = {}
 
@@ -50,92 +50,262 @@ export function resolveUrl(url, baseUrl) {
   return url
 }
 
-function parseHtml(html) {
-  const parser = new DOMParser()
-  return parser.parseFromString(html, 'text/html')
+function selectElements($document, rule) {
+  const ruleStr = rule?.trim()
+  if (!ruleStr) return []
+
+  if (ruleStr.startsWith('||')) {
+    const results = []
+    for (const part of ruleStr.split('||')) {
+      const found = selectSingleElements($document, part)
+      results.push(...found)
+    }
+    return results
+  }
+
+  return selectSingleElements($document, ruleStr)
 }
 
-export async function parseSearchResultAsync(content, ruleSearch, sourceUrl = '') {
-  if (!content || !ruleSearch) return []
+function selectSingleElements($document, rule) {
+  const parts = rule.split('@')
+  if (parts.length === 0) return []
 
+  let current = null
+
+  for (let i = 0; i < parts.length; i++) {
+    let part = parts[i].trim()
+    if (!part) continue
+
+    let excludeIdx = null
+    let cleanPart = part
+
+    if (part.includes('!')) {
+      const parts2 = part.split('!')
+      if (parts2.length >= 2) {
+        const idx = parseInt(parts2[1])
+        if (!isNaN(idx)) {
+          excludeIdx = idx
+          cleanPart = parts2[0]
+        }
+      }
+    }
+
+    let selStr = cleanPart
+    let selIdx = null
+
+    if (cleanPart.includes('.')) {
+      const parts2 = cleanPart.split('.')
+      if (parts2.length >= 2) {
+        const idx = parseInt(parts2[1])
+        if (!isNaN(idx)) {
+          selIdx = idx
+          selStr = parts2[0]
+        }
+      }
+    }
+
+    let candidates = []
+    if (i === 0) {
+      candidates = $document(selStr).get()
+    } else if (current) {
+      candidates = $(current).find(selStr).get()
+    }
+
+    if (candidates.length === 0) return []
+
+    if (excludeIdx !== null) {
+      const removeIdx = excludeIdx < 0 ? candidates.length + excludeIdx : excludeIdx
+      if (removeIdx >= 0 && removeIdx < candidates.length) {
+        candidates.splice(removeIdx, 1)
+      }
+    }
+
+    if (selIdx !== null) {
+      const idx = selIdx < 0 ? candidates.length + selIdx : selIdx
+      current = idx < candidates.length ? candidates[idx] : null
+    } else {
+      current = candidates
+    }
+
+    if (!current || (Array.isArray(current) && current.length === 0)) {
+      return []
+    }
+  }
+
+  return Array.isArray(current) ? current : [current]
+}
+
+function extractField($, $el, rule) {
+  if (!rule || typeof rule !== 'string') return ''
+  const ruleStr = rule.trim()
+  if (!ruleStr) return ''
+
+  if (ruleStr.includes('||')) {
+    for (const part of ruleStr.split('||')) {
+      const result = extractSingleField($, $el, part)
+      if (result) return result
+    }
+    return ''
+  }
+
+  return extractSingleField($, $el, ruleStr)
+}
+
+function extractSingleField($, $el, rule) {
+  if (!rule || typeof rule !== 'string') return ''
+  const parts = rule.split('@')
+  if (parts.length === 0) return ''
+
+  let current = $el
+  console.log('[extractSingleField] rule:', rule, 'parts:', parts)
+
+  for (let i = 0; i < parts.length; i++) {
+    let part = parts[i].trim()
+    if (!part) continue
+
+    const isLast = i === parts.length - 1
+
+    if (isLast) {
+      console.log('[extractSingleField] 最后一步, part:', part)
+      if (part === 'text' || part === 'textNodes' || part === 'txt') {
+        const res = $(current).text().trim()
+        console.log('[extractSingleField] 提取文本:', res)
+        return res
+      }
+      if (part === 'href' || part === 'src' || part.startsWith('data-')) {
+        const res = $(current).attr(part) || ''
+        console.log('[extractSingleField] 提取属性:', part, '=', res)
+        return res
+      }
+      if (part === 'html' || part === 'all') {
+        const res = $(current).html() || ''
+        console.log('[extractSingleField] 提取HTML:', res)
+        return res
+      }
+      const res = $(current).text().trim()
+      console.log('[extractSingleField] 默认提取文本:', res)
+      return res
+    }
+
+    let selStr = part
+    let selIdx = null
+
+    console.log('[extractSingleField] 处理 part:', part)
+
+    if (part.includes('.') && !part.startsWith('.')) {
+      const dotIdx = part.indexOf('.')
+      let beforeDot = part.substring(0, dotIdx)
+      let afterDot = part.substring(dotIdx + 1)
+      
+      if (afterDot.includes(':')) {
+        const colonIdx = afterDot.indexOf(':')
+        const idx1 = parseInt(afterDot.substring(0, colonIdx))
+        const idx2 = parseInt(afterDot.substring(colonIdx + 1))
+        if (!isNaN(idx1) && !isNaN(idx2)) {
+          selStr = beforeDot
+          selIdx = idx1
+          console.log('[extractSingleField] 第一索引, selStr:', selStr, 'idx:', selIdx, '第二索引:', idx2)
+          const candidates = $(current).find(selStr).get()
+          if (candidates.length > 0) {
+            const realIdx = idx1 < 0 ? candidates.length + idx1 : idx1
+            if (realIdx >= 0 && realIdx < candidates.length) {
+              const subEl = candidates[realIdx]
+              const subCandidates = $(subEl).children().get()
+              if (subCandidates.length > 0) {
+                const subIdx = idx2 < 0 ? subCandidates.length + idx2 : idx2
+                if (subIdx >= 0 && subIdx < subCandidates.length) {
+                  current = subCandidates[subIdx]
+                  console.log('[extractSingleField] 双重索引完成, 选中元素:', $(current).text())
+                  continue
+                }
+              }
+            }
+          }
+          current = null
+          continue
+        }
+      } else {
+        const idx = parseInt(afterDot)
+        if (!isNaN(idx)) {
+          selIdx = idx
+          selStr = beforeDot
+          console.log('[extractSingleField] 普通索引, selStr:', selStr, 'idx:', selIdx)
+        }
+      }
+    }
+
+    if (part.includes(':') && selIdx === null) {
+      const parts2 = part.split(':')
+      if (parts2.length >= 2) {
+        const idx = parseInt(parts2[1])
+        if (!isNaN(idx)) {
+          selIdx = idx
+          selStr = parts2[0]
+          console.log('[extractSingleField] 负索引, selStr:', selStr, 'idx:', selIdx)
+        }
+      }
+    }
+
+    console.log('[extractSingleField] 搜索选择器:', selStr)
+    const candidates = $(current).find(selStr).get()
+    console.log('[extractSingleField] 找到候选元素数量:', candidates.length)
+    
+    if (candidates.length === 0) return ''
+
+    if (selIdx !== null) {
+      const idx = selIdx < 0 ? candidates.length + selIdx : selIdx
+      console.log('[extractSingleField] 使用索引:', selIdx, '→', idx)
+      current = idx < candidates.length ? candidates[idx] : null
+    } else {
+      current = candidates[candidates.length - 1]
+      console.log('[extractSingleField] 使用最后一个元素:', candidates.length - 1)
+    }
+
+    if (!current) {
+      console.log('[extractSingleField] 当前元素为空，返回')
+      return ''
+    }
+    console.log('[extractSingleField] 当前元素设置为:', $(current).html())
+  }
+
+  const res = $(current).text().trim()
+  console.log('[extractSingleField] 最终结果:', res)
+  return res
+}
+
+async function parseJsonSearchResultAsync(content, ruleSearch, sourceUrl) {
   const results = []
   let bookListRule = ruleSearch.bookList || ''
 
-  let isJson = false
-  let jsonData = null
-  
-  const trimmed = content.trim()
-  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
-      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
-    try {
-      jsonData = JSON.parse(content)
-      isJson = true
-    } catch (e) {}
-  }
+  const jsonData = JSON.parse(content)
 
   let elements = []
-  
-  if (isJson) {
-    if (bookListRule.startsWith('$')) {
-      const jsonPath = bookListRule.replace(/^\$\.?/, '')
-      elements = jsonSelect(jsonData, jsonPath)
-    } else if (bookListRule.startsWith('@json:')) {
-      const jsonPath = bookListRule.substring(6)
-      elements = jsonSelect(jsonData, jsonPath)
-    } else {
-      elements = jsonSelect(jsonData, bookListRule || '$')
-    }
+  if (bookListRule.startsWith('$')) {
+    const jsonPath = bookListRule.replace(/^\$\.?/, '')
+    elements = jsonSelect(jsonData, jsonPath)
+  } else if (bookListRule.startsWith('@json:')) {
+    const jsonPath = bookListRule.substring(6)
+    elements = jsonSelect(jsonData, jsonPath)
   } else {
-    if (bookListRule.startsWith('@css:')) {
-      const selector = bookListRule.substring(5)
-      const doc = parseHtml(content)
-      elements = Array.from(doc.querySelectorAll(selector))
-    } else if (bookListRule.startsWith('@xpath:')) {
-      const xpath = bookListRule.substring(7)
-      const doc = parseHtml(content)
-      const result = doc.evaluate(xpath, doc.body, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null)
-      elements = []
-      for (let i = 0; i < result.snapshotLength; i++) {
-        elements.push(result.snapshotItem(i))
-      }
-    } else if (bookListRule.startsWith('$')) {
-      const jsonPath = bookListRule.replace(/^\$\.?/, '')
-      try {
-        const match = content.match(/<script[^>]*>([\s\S]*?)<\/script>/i)
-        if (match) {
-          const json = JSON.parse(match[1])
-          elements = jsonSelect(json, jsonPath)
-        }
-      } catch (e) {}
-    } else if (bookListRule.startsWith(':')) {
-      const regex = new RegExp(bookListRule.substring(1), 'g')
-      const matches = content.match(regex)
-      elements = matches ? matches.map(m => ({ textContent: m, outerHTML: m })) : []
-    } else {
-      const doc = parseHtml(content)
-      elements = Array.from(doc.querySelectorAll(bookListRule || 'a'))
-    }
+    elements = jsonSelect(jsonData, bookListRule || '$')
   }
 
   for (const el of elements) {
-    const elHtml = el.outerHTML || String(el)
-    
-    const [bookName, author, bookUrl, coverUrl, intro, kind, wordCount, lastChapter] = await Promise.all([
-      extractSingleRuleAsync(elHtml, ruleSearch.name),
-      extractSingleRuleAsync(elHtml, ruleSearch.author),
-      extractSingleRuleAsync(elHtml, ruleSearch.bookUrl),
-      extractSingleRuleAsync(elHtml, ruleSearch.coverUrl),
-      extractSingleRuleAsync(elHtml, ruleSearch.intro),
-      extractSingleRuleAsync(elHtml, ruleSearch.kind),
-      extractSingleRuleAsync(elHtml, ruleSearch.wordCount),
-      extractSingleRuleAsync(elHtml, ruleSearch.lastChapter || ruleSearch.latestChapter),
-    ])
+    const elHtml = typeof el === 'string' ? el : JSON.stringify(el)
+    const $ = cheerio.load(elHtml)
 
-    const book = { bookName, author, bookUrl, coverUrl, intro, kind, wordCount, lastChapter }
+    const book = {
+      bookName: extractField($, $.root(), ruleSearch.name || ''),
+      author: extractField($, $.root(), ruleSearch.author || ''),
+      bookUrl: resolveUrl(extractField($, $.root(), ruleSearch.bookUrl || ''), sourceUrl),
+      coverUrl: resolveUrl(extractField($, $.root(), ruleSearch.coverUrl || ''), sourceUrl),
+      intro: extractField($, $.root(), ruleSearch.intro || ''),
+      kind: extractField($, $.root(), ruleSearch.kind || ''),
+      wordCount: extractField($, $.root(), ruleSearch.wordCount || ''),
+      lastChapter: extractField($, $.root(), ruleSearch.lastChapter || ruleSearch.latestChapter || ''),
+    }
 
     if (book.bookName) {
-      book.bookUrl = resolveUrl(book.bookUrl || '', sourceUrl)
-      book.coverUrl = resolveUrl(book.coverUrl || '', sourceUrl)
       results.push(book)
     }
   }
@@ -143,15 +313,56 @@ export async function parseSearchResultAsync(content, ruleSearch, sourceUrl = ''
   return results
 }
 
-async function extractSingleRuleAsync(elementHtml, rule, baseUrl) {
-  if (!rule || !elementHtml) return ''
-  
+export async function parseSearchResultAsync(content, ruleSearch, sourceUrl = '') {
+  if (!content || !ruleSearch) return []
+
+  let bookListRule = ruleSearch.bookList || ''
+
+  let isJson = false
+
+  const trimmed = content.trim()
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      JSON.parse(content)
+      isJson = true
+    } catch (e) {}
+  }
+
+  if (isJson) {
+    return parseJsonSearchResultAsync(content, ruleSearch, sourceUrl)
+  }
+
   try {
-    const result = await extractElement(elementHtml, rule)
-    return result || ''
+    const $ = cheerio.load(content)
+    const bookElements = selectElements($, bookListRule)
+
+    if (bookElements.length === 0) {
+      return []
+    }
+
+    const results = []
+    for (const el of bookElements) {
+      const book = {
+        bookName: extractField($, el, ruleSearch.name || ''),
+        author: extractField($, el, ruleSearch.author || ''),
+        bookUrl: resolveUrl(extractField($, el, ruleSearch.bookUrl || ''), sourceUrl),
+        coverUrl: resolveUrl(extractField($, el, ruleSearch.coverUrl || ''), sourceUrl),
+        intro: extractField($, el, ruleSearch.intro || ''),
+        kind: extractField($, el, ruleSearch.kind || ''),
+        wordCount: extractField($, el, ruleSearch.wordCount || ''),
+        lastChapter: extractField($, el, ruleSearch.lastChapter || ruleSearch.latestChapter || ''),
+      }
+      if (book.bookName) {
+        console.log('[parse] book:', book)
+        results.push(book)
+      }
+    }
+
+    return results
   } catch (e) {
-    console.error('[extractSingleRuleAsync] error:', e)
-    return ''
+    console.error('[parseSearchResultAsync] Cheerio解析失败:', e)
+    return []
   }
 }
 

@@ -36,7 +36,7 @@
           <div v-else class="book-cover placeholder">📖</div>
           <div class="book-info">
             <div class="book-name">{{ book.bookName }}</div>
-            <div class="book-author">作者：{{ book.author }} · {{ book.wordCount }}</div>
+            <div class="book-author">作者：{{ book.author }} · {{ book.wordCount }} · {{ book.kind.split('||').join(' · ') }} </div>
             <div class="book-intro" :title="book.intro">简介：{{ book.intro }}</div>
           </div>
         </div>
@@ -119,8 +119,6 @@ async function searchBooks() {
 
       if (res) {
         const ruleSearch = source.ruleSearch || {}
-        console.log('source: ', source);
-        console.log('搜索规则:', ruleSearch)
         
         const results = await parseSearchResultAsync(res, ruleSearch, source.bookSourceUrl)
         console.log('解析结果数量:', results.length)
