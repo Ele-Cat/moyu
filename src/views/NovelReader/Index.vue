@@ -1,658 +1,365 @@
 <template>
-  <div class="novel-reader">
-    <CategoryTabs v-model="activeTab" :categories="categories" />
-
-    <div class="reader-content">
-      <Bookshelf
-        v-if="activeTab === 'bookshelf'"
-        @select-book="handleSelectBook"
-      />
-      <Search
-        v-if="activeTab === 'search'"
-        @select-book="handleSelectBook"
-        @change-tab="activeTab = $event"
-      />
-      <SourceManage
-        v-if="activeTab === 'sourceManage'"
-      />
+  <div class="bookshelf">
+    <div class="toolbar">
+      <el-button @click="refreshBooks" type="primary" :icon="Refresh">刷新书架</el-button>
+      <span class="book-count">共 {{ bookStore.sortedBooks.length }} 本书</span>
     </div>
 
-    <el-dialog
-      v-model="showBookDetail"
-      :title="currentBook?.bookName"
-      width="80%"
-      destroy-on-close
-    >
-      <div v-if="currentBook" class="book-detail">
-        <div class="detail-header">
-          <img
-            v-if="currentBook.coverUrl"
-            :src="currentBook.coverUrl"
-            class="detail-cover"
-            @error="currentBook.coverUrl = ''"
-          />
-          <div v-else class="detail-cover placeholder">📖</div>
-          <div class="detail-info">
-            <p><strong>作者:</strong> {{ currentBook.author }}</p>
-            <p><strong>字数:</strong> {{ currentBook.wordCount }}</p>
-            <p><strong>最新:</strong> {{ currentBook.latestChapter }}</p>
+    <div v-if="loading" class="loading">
+      <el-icon class="is-loading"><Loading /></el-icon>
+      <span>加载中...</span>
+    </div>
+    
+    <div v-else-if="bookStore.sortedBooks.length > 0" class="book-grid">
+      <div
+        v-for="book in bookStore.sortedBooks"
+        :key="book.filePath"
+        class="book-card"
+        @click="openBook(book)"
+      >
+        <div class="card-cover">
+          <img v-if="book.coverUrl" :src="book.coverUrl" @error="book.coverUrl = ''" />
+          <div v-else class="cover-placeholder">
+            <span class="format-badge">{{ book.format.toUpperCase() }}</span>
+            <span class="book-icon">📚</span>
+          </div>
+          <div class="card-overlay">
+            <el-button type="primary" size="small" :icon="Reading" circle />
           </div>
         </div>
-        <div class="detail-desc">{{ currentBook.intro }}</div>
-        <div class="detail-actions">
-          <button @click="handleSwitchSource">换源</button>
-          <button class="read-btn" @click="startReading">开始阅读</button>
-        </div>
-
-        <div v-if="loadingChapters" class="loading">加载章节中...</div>
-        <div v-else-if="chapterList.length > 0" class="chapter-list">
-          <div
-            v-for="(chapter, index) in chapterList"
-            :key="index"
-            class="chapter-item"
-            @click="readChapter(chapter)"
-          >
-            {{ chapter.title }}
+        <div class="card-info">
+          <h3 class="book-name">{{ book.bookName }}</h3>
+          <p class="book-author">{{ book.author }}</p>
+          <div v-if="getLastReadTime(book.filePath)" class="last-read">
+            <el-icon><Clock /></el-icon>
+            <span>{{ formatLastRead(getLastReadTime(book.filePath)) }}</span>
           </div>
         </div>
-      </div>
-    </el-dialog>
-
-    <el-dialog
-      v-model="showSwitchSource"
-      title="换源"
-      width="80%"
-      destroy-on-close
-    >
-      <div v-if="showSwitchSource && currentBook" class="source-list">
-        <div
-          v-for="source in bookSourceList"
-          :key="source.sourceUrl"
-          class="source-item"
-          @click="changeSource(source)"
-        >
-          <span class="source-name">{{ source.sourceName }}</span>
-          <span class="chapter-count">{{ source.chapterCount }}章</span>
-        </div>
-      </div>
-    </el-dialog>
-
-    <div v-if="reading" class="reading-view">
-      <div class="reading-header">
-        <span class="back-btn" @click="closeReading">← 返回</span>
-        <span class="chapter-title">{{ currentChapter?.title }}</span>
-        <span class="settings-btn" @click="showSettings = true">⚙️</span>
-      </div>
-      <div class="reading-content" :style="readerStyle">
-        <div class="chapter-content" v-html="chapterContent"></div>
-      </div>
-      <div class="reading-footer">
-        <button @click="prevChapter">上一章</button>
-        <span class="page-info">{{ currentChapterIndex + 1 }} / {{ chapterList.length }}</span>
-        <button @click="nextChapter">下一章</button>
       </div>
     </div>
-
-    <div v-if="showSettings" class="settings-overlay" @click="showSettings = false">
-      <div class="settings-panel" @click.stop>
-        <h3>阅读设置</h3>
-        <div class="setting-row">
-          <label>字体大小：{{ fontSize }}px</label>
-          <input type="range" min="12" max="28" v-model="fontSize" />
+    
+    <div v-else class="empty">
+      <div class="empty-illustration">
+        <div class="stack-books">
+          <span>📚</span>
+          <span>📖</span>
+          <span>📕</span>
         </div>
-        <div class="setting-row">
-          <label>背景：</label>
-          <div class="bg-options">
-            <span
-              v-for="bg in bgOptions"
-              :key="bg.value"
-              class="bg-option"
-              :class="{ active: bgColor === bg.value }"
-              :style="{ background: bg.value }"
-              @click="bgColor = bg.value"
-            ></span>
-          </div>
-        </div>
-        <div class="setting-row">
-          <label>间距：</label>
-          <select v-model="lineHeight">
-            <option value="1.5">紧凑</option>
-            <option value="1.8">正常</option>
-            <option value="2.2">宽松</option>
-          </select>
-        </div>
-        <button class="close-settings" @click="showSettings = false">关闭</button>
       </div>
+      <p class="empty-title">书架空空如也</p>
+      <p class="empty-tip">在 storagePath/books 目录下放入 txt 或 epub 文件</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-import { useBookSourceStore } from '@/stores/modules/bookSource'
-import { buildSearchUrl, parseSearchResultAsync, parseHeader, buildCatalogUrl, parseCatalog, buildContentUrl, parseContent } from '@/views/NovelReader/utils'
-import CategoryTabs from '@/components/CategoryTabs/Index.vue'
-import Bookshelf from './modules/Bookshelf.vue'
-import Search from './modules/Search.vue'
-import SourceManage from './modules/SourceManage.vue'
+import { ref, onMounted } from 'vue'
+import { useBookStore } from '@/stores/modules/book'
+import { useAppStore } from '@/stores/modules/app'
+import { Refresh, Reading, Clock, Loading } from '@element-plus/icons-vue'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
-const categories = [
-  { id: 'bookshelf', category: '书架' },
-  { id: 'search', category: '搜索' },
-  { id: 'sourceManage', category: '书源' }
-]
+const bookStore = useBookStore()
+const appStore = useAppStore()
 
-const bookSourceStore = useBookSourceStore()
+const loading = ref(false)
 
-const activeTab = ref('search')
-const showBookDetail = ref(false)
-const showSwitchSource = ref(false)
-const currentBook = ref(null)
-const chapterList = ref([])
-const loadingChapters = ref(false)
-const bookSourceList = ref([])
-const reading = ref(false)
-const currentChapterIndex = ref(0)
-const chapterContent = ref('')
-const currentChapter = ref(null)
-const showSettings = ref(false)
-
-const fontSize = ref(16)
-const bgColor = ref('#f5f5f5')
-const lineHeight = ref('1.8')
-
-const bgOptions = [
-  { value: '#f5f5f5', name: '浅灰' },
-  { value: '#ffffff', name: '白色' },
-  { value: '#1a1a1a', name: '黑色' },
-  { value: '#e6f7ff', name: '浅蓝' },
-  { value: '#f6ffed', name: '浅绿' },
-]
-
-const readerStyle = computed(() => ({
-  fontSize: fontSize.value + 'px',
-  backgroundColor: bgColor.value,
-  lineHeight: lineHeight.value,
-  color: bgColor.value === '#1a1a1a' ? '#ccc' : '#333',
-}))
-
-function handleSelectBook(book) {
-  getBookDetail(book)
+const getLastReadTime = (filePath) => {
+  return bookStore.readingHistory[filePath]?.lastReadTime || 0
 }
 
-async function getBookDetail(book) {
-  currentBook.value = { ...book }
-  showBookDetail.value = true
-  loadingChapters.value = true
-  chapterList.value = []
+const formatLastRead = (timestamp) => {
+  if (!timestamp) return ''
+  const now = Date.now()
+  const diff = now - timestamp
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return new Date(timestamp).toLocaleDateString()
+}
 
+const refreshBooks = async () => {
+  loading.value = true
   try {
-    const source = bookSourceStore.sources.find(s =>
-      s.bookSourceUrl === book.sourceUrl ||
-      s.bookSourceUrl === bookSourceStore.currentSource?.bookSourceUrl
-    ) || bookSourceStore.currentSource
-
-    if (!source) {
-      alert('请先选择书源')
-      return
-    }
-
-    const headers = parseHeader(source.header)
-    headers['User-Agent'] = headers['User-Agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-
-    const catalogUrl = buildCatalogUrl(source, book.bookUrl)
-    
-    const res = await invoke('fetch_api', {
-      options: {
-        url: catalogUrl,
-        method: 'GET',
-        headers: headers,
-        return_type: 'text'
-      }
-    })
-
-    if (res.body && typeof res.body === 'string') {
-      const ruleToc = source.ruleToc || {}
-      const chapters = parseCatalog(res.body, ruleToc)
-      
-      chapterList.value = chapters.map((ch, i) => ({
-        title: ch.title,
-        url: ch.url,
-        index: i
-      }))
-
-      if (book.bookName) {
-        currentBook.value.intro = book.intro || ''
-        currentBook.value.wordCount = book.wordCount || ''
-        currentBook.value.latestChapter = book.latestChapter || (chapters.length > 0 ? chapters[chapters.length - 1].title : '')
-        currentBook.value.coverUrl = book.coverUrl || ''
-      }
-    }
+    await bookStore.scanBooks(appStore.storagePath)
   } catch (e) {
-    console.error('获取详情失败:', e)
+    console.error('加载书籍失败:', e)
   } finally {
-    loadingChapters.value = false
+    loading.value = false
   }
 }
 
-async function handleSwitchSource() {
-  bookSourceList.value = []
-  showSwitchSource.value = true
-
-  const enabledSources = bookSourceStore.getEnabledSources
-  for (const source of enabledSources) {
-    try {
-      const headers = parseHeader(source.header)
-      headers['User-Agent'] = headers['User-Agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-
-      const catalogUrl = buildCatalogUrl(source, currentBook.value.bookUrl)
-      
-      const res = await invoke('fetch_api', {
-        options: {
-          url: catalogUrl,
-          method: 'GET',
-          headers: headers,
-          return_type: 'text'
-        }
-      })
-
-      if (res.body && typeof res.body === 'string') {
-        const ruleToc = source.ruleToc || {}
-        const chapters = parseCatalog(res.body, ruleToc)
-
-        bookSourceList.value.push({
-          sourceName: source.bookSourceName,
-          sourceUrl: source.bookSourceUrl,
-          chapterCount: chapters.length
-        })
-      }
-    } catch (e) {
-      console.error(`获取 ${source.bookSourceName} 失败:`, e)
-    }
-  }
-}
-
-function changeSource(source) {
-  const newSource = bookSourceStore.sources.find(s => s.bookSourceUrl === source.sourceUrl)
-  if (newSource) {
-    bookSourceStore.setCurrentSource(newSource)
-    showSwitchSource.value = false
-    getBookDetail({
-      ...currentBook.value,
-      sourceUrl: source.sourceUrl
-    })
-  }
-}
-
-function startReading() {
-  if (chapterList.value.length > 0) {
-    reading.value = true
-    currentChapterIndex.value = 0
-    readChapter(chapterList.value[0])
-    addToBookshelf()
-  }
-}
-
-function addToBookshelf() {
-  bookSourceStore.addToBookshelf({
-    ...currentBook.value,
-    readProgress: '未阅读'
-  })
-}
-
-async function readChapter(chapter) {
-  currentChapter.value = chapter
-  currentChapterIndex.value = chapter.index
-  chapterContent.value = '<p>加载中...</p>'
-
+const openBook = async (book) => {
   try {
-    const source = bookSourceStore.sources.find(s =>
-      s.bookSourceUrl === currentBook.value.sourceUrl
-    ) || bookSourceStore.currentSource
-
-    const headers = parseHeader(source.header)
-    headers['User-Agent'] = headers['User-Agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-
-    const contentUrl = buildContentUrl(source, chapter.url)
-
-    const res = await invoke('fetch_api', {
-      options: {
-        url: contentUrl,
-        method: 'GET',
-        headers: headers,
-        return_type: 'text'
-      }
+    const webview = new WebviewWindow('novelReader-' + Date.now(), {
+      url: `/sub/novel-reader?book=${encodeURIComponent(book.filePath)}&format=${book.format}`,
+      title: book.bookName,
+      width: 800,
+      height: 600,
+      center: true,
+      decorations: true,
+      resizable: true,
     })
-
-    if (res.body && typeof res.body === 'string') {
-      const ruleContent = source.ruleContent || {}
-      const content = parseContent(res.body, ruleContent, source)
-      chapterContent.value = content || '<p>加载失败</p>'
-
-      bookSourceStore.updateBookProgress(currentBook.value.bookUrl, chapter.title)
-    }
+    
+    webview.once('tauri://created', () => {
+      bookStore.updateReadTime(book.filePath)
+      bookStore.saveSettingsToStorage()
+    })
+    
+    webview.once('tauri://error', (e) => {
+      console.error('窗口创建失败:', e)
+    })
   } catch (e) {
-    console.error('加载章节失败:', e)
-    chapterContent.value = '<p>加载失败</p>'
+    console.error('打开窗口失败:', e)
   }
 }
 
-function prevChapter() {
-  if (currentChapterIndex.value > 0) {
-    currentChapterIndex.value--
-    readChapter(chapterList.value[currentChapterIndex.value])
-  }
-}
-
-function nextChapter() {
-  if (currentChapterIndex.value < chapterList.value.length - 1) {
-    currentChapterIndex.value++
-    readChapter(chapterList.value[currentChapterIndex.value])
-  }
-}
-
-function closeReading() {
-  reading.value = false
-}
-
-onMounted(async () => {
-  await bookSourceStore.init()
-  if (bookSourceStore.sources.length > 0 && !bookSourceStore.currentSource) {
-    const enabled = bookSourceStore.getEnabledSources
-    if (enabled.length > 0) {
-      bookSourceStore.setCurrentSource(enabled[0])
-    }
-  }
+onMounted(() => {
+  bookStore.loadSettingsFromStorage()
+  refreshBooks()
 })
 </script>
 
 <style lang="less" scoped>
-.novel-reader {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--bg-color, #f5f5f5);
-  padding: 15px;
-}
-
-.reader-content {
-  flex: 1;
-  overflow: hidden;
-}
-
-.book-detail {
-  .detail-header {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-  }
-
-  .detail-cover {
-    width: 100px;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 6px;
-
-    &.placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #e0e0e0;
-      font-size: 40px;
-    }
-  }
-
-  .detail-info {
-    flex: 1;
-    font-size: 14px;
-
-    p {
-      margin: 5px 0;
-    }
-  }
-
-  .detail-desc {
-    font-size: 14px;
-    line-height: 1.8;
-    color: #666;
-    max-height: 100px;
-    overflow-y: auto;
-    margin-bottom: 15px;
-  }
-
-  .detail-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-
-    button {
-      padding: 10px 20px;
-      border: 1px solid #667eea;
-      border-radius: 20px;
-      cursor: pointer;
-      background: #fff;
-      color: #667eea;
-      font-size: 14px;
-
-      &.read-btn {
-        background: #667eea;
-        color: #fff;
-      }
-    }
-  }
-}
-
-.chapter-list {
-  max-height: 300px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chapter-item {
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-
-  &:hover {
-    background: #e0e0e0;
-  }
-}
-
-.source-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.source-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: #f5f5f5;
-  border-radius: 8px;
-  cursor: pointer;
-
-  &:hover {
-    background: #e0e0e0;
-  }
-
-  .source-name {
-    font-weight: bold;
-  }
-
-  .chapter-count {
-    color: #888;
-    font-size: 13px;
-  }
-}
-
-.reading-view {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #fff;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-}
-
-.reading-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 15px;
-  background: #fff;
-  border-bottom: 1px solid #eee;
-
-  .back-btn {
-    color: #667eea;
-    cursor: pointer;
-  }
-
-  .chapter-title {
-    flex: 1;
-    text-align: center;
-    font-weight: bold;
-    font-size: 14px;
-    padding: 0 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .settings-btn {
-    font-size: 20px;
-    cursor: pointer;
-  }
-}
-
-.reading-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 25px;
-}
-
-.chapter-content {
-  max-width: 800px;
-  margin: 0 auto;
-
-  :deep(p) {
-    margin-bottom: 15px;
-    text-indent: 2em;
-  }
-}
-
-.reading-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  background: #fff;
-  border-top: 1px solid #eee;
-
-  button {
-    padding: 8px 20px;
-    background: #667eea;
-    color: #fff;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .page-info {
-    color: #888;
-    font-size: 13px;
-  }
-}
-
-.settings-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.settings-panel {
-  width: 80%;
-  max-width: 350px;
-  background: #fff;
-  border-radius: 12px;
+.bookshelf {
   padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+}
 
-  h3 {
-    margin-bottom: 20px;
-    text-align: center;
-  }
-
-  .setting-row {
-    margin-bottom: 20px;
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-
-    input[type="range"] {
-      width: 100%;
-    }
-
-    select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-    }
-  }
-
-  .bg-options {
-    display: flex;
-    gap: 10px;
-
-    .bg-option {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-
-      &.active {
-        border-color: #667eea;
-      }
-    }
-  }
-
-  .close-settings {
-    width: 100%;
-    padding: 10px;
-    background: #667eea;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-top: 10px;
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 0 4px;
+  
+  .book-count {
+    color: #909399;
     font-size: 14px;
   }
 }
 
 .loading {
-  text-align: center;
-  padding: 20px;
-  color: #888;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: #909399;
+  gap: 12px;
+  
+  .is-loading {
+    font-size: 32px;
+    animation: rotate 1s linear infinite;
+  }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+}
+
+.book-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  
+  &:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    
+    .card-overlay {
+      opacity: 1;
+    }
+    
+    .card-cover img {
+      transform: scale(1.05);
+    }
+  }
+}
+
+.card-cover {
+  position: relative;
+  aspect-ratio: 3/2;
+  overflow: hidden;
+  background: linear-gradient(145deg, #e8e8e8 0%, #d4d4d4 100%);
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .cover-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    
+    .format-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+    }
+    
+    .book-icon {
+      font-size: 48px;
+      opacity: 0.9;
+    }
+  }
+  
+  .card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+}
+
+.card-info {
+  padding: 12px;
+  
+  .book-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+    margin: 0 0 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+  
+  .book-author {
+    font-size: 12px;
+    color: #909399;
+    margin: 0 0 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .last-read {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #c0c4cc;
+    
+    .el-icon {
+      font-size: 12px;
+    }
+  }
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: #909399;
+  
+  .empty-illustration {
+    margin-bottom: 24px;
+    
+    .stack-books {
+      display: flex;
+      gap: 8px;
+      font-size: 48px;
+      animation: float 3s ease-in-out infinite;
+      
+      span:nth-child(2) {
+        animation-delay: 0.5s;
+      }
+      
+      span:nth-child(3) {
+        animation-delay: 1s;
+      }
+    }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .empty-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: #606266;
+    margin: 0 0 8px;
+  }
+  
+  .empty-tip {
+    font-size: 14px;
+    color: #909399;
+    margin: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  
+  .card-cover {
+    aspect-ratio: 2/3;
+  }
+  
+  .card-info {
+    padding: 10px;
+    
+    .book-name {
+      font-size: 13px;
+    }
+  }
 }
 </style>

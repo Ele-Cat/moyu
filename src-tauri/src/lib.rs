@@ -283,7 +283,15 @@ fn read_novel_content(path: String) -> Result<String, String> {
         return Err("不支持预览此类型文件".to_string());
     }
 
-    fs::read_to_string(&path).map_err(|e| format!("读取文件失败: {}", e))
+    let bytes = fs::read(&path).map_err(|e| format!("读取文件失败: {}", e))?;
+    
+    let (content, _, _) = encoding_rs::GBK.decode(&bytes);
+    if content.contains('\u{FFFD}') {
+        let (content, _, _) = encoding_rs::UTF_8.decode(&bytes);
+        Ok(content.into_owned())
+    } else {
+        Ok(content.into_owned())
+    }
 }
 
 #[tauri::command]
@@ -382,6 +390,109 @@ async fn download_file(url: String, dir: String, file_name: String) -> Result<St
         .map_err(|e| format!("保存文件失败: {}", e))?;
     
     Ok(file_path.to_string_lossy().to_string())
+}
+
+#[derive(Serialize)]
+struct EpubChapter {
+    title: String,
+    content: String,
+}
+
+#[tauri::command]
+/// 解析 EPUB 文件获取章节列表
+fn parse_epub(file_path: String) -> Result<Vec<EpubChapter>, String> {
+    use std::fs::File;
+    use std::io::Read;
+    use zip::ZipArchive;
+    
+    let path = std::path::PathBuf::from(&file_path);
+    if !path.exists() {
+        return Err("文件不存在".to_string());
+    }
+
+    let file = File::open(&path).map_err(|e| format!("打开文件失败: {}", e))?;
+    let mut archive = ZipArchive::new(file).map_err(|e| format!("解析ZIP失败: {}", e))?;
+
+    let mut chapters = Vec::new();
+    let mut html_contents: Vec<(String, String)> = Vec::new();
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).map_err(|e| format!("读取文件失败: {}", e))?;
+        let name = file.name().to_string();
+        
+        if name.ends_with(".html") || name.ends_with(".xhtml") || name.ends_with(".htm") {
+            let mut content = String::new();
+            file.read_to_string(&mut content).ok();
+            if !content.is_empty() {
+                html_contents.push((name.clone(), content));
+            }
+        }
+    }
+
+    html_contents.sort_by(|a, b| a.0.cmp(&b.0));
+
+    for (idx, (_, content)) in html_contents.iter().enumerate() {
+        let title = extract_title_from_html(content)
+            .or_else(|| Some(format!("第{}章", idx + 1)))
+            .unwrap();
+        
+        let text_content = html_to_text(content);
+        
+        chapters.push(EpubChapter {
+            title,
+            content: text_content,
+        });
+    }
+
+    if chapters.is_empty() {
+        chapters.push(EpubChapter {
+            title: "全文".to_string(),
+            content: "无法解析章节内容".to_string(),
+        });
+    }
+
+    Ok(chapters)
+}
+
+fn extract_title_from_html(html: &str) -> Option<String> {
+    use regex::Regex;
+    
+    let re = Regex::new(r"<title[^>]*>([^<]+)</title>").ok()?;
+    let caps = re.captures(html)?;
+    let title = caps.get(1)?.as_str().trim().to_string();
+    if title.is_empty() {
+        return None;
+    }
+    Some(title)
+}
+
+fn html_to_text(html: &str) -> String {
+    use regex::Regex;
+    
+    let mut text = html.to_string();
+    
+    let re = Regex::new(r"<script[^>]*>.*?</script>").unwrap();
+    text = re.replace_all(&text, "").to_string();
+    
+    let re = Regex::new(r"<style[^>]*>.*?</style>").unwrap();
+    text = re.replace_all(&text, "").to_string();
+    
+    let re = Regex::new(r"<[^>]+>").unwrap();
+    text = re.replace_all(&text, "\n").to_string();
+    
+    let re = Regex::new(r"\n{3,}").unwrap();
+    text = re.replace_all(&text, "\n\n").to_string();
+    
+    text.trim().to_string()
+}
+
+#[tauri::command]
+/// 获取 EPUB 章节内容
+fn get_epub_chapter(file_path: String, index: usize) -> Result<String, String> {
+    let chapters = parse_epub(file_path)?;
+    chapters.get(index)
+        .map(|c| c.content.clone())
+        .ok_or_else(|| "章节不存在".to_string())
 }
 
 #[tauri::command]
@@ -503,6 +614,8 @@ pub fn run() {
             set_wallpaper,
             download_file,
             refresh_wallpaper,
+            parse_epub,
+            get_epub_chapter,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -71,6 +71,12 @@ const router = createRouter({
           component: () => import('../views/Sub/Reminder.vue'),
           meta: { title: '提醒' }
         },
+        {
+          path: 'novel-reader',
+          name: 'novel-reader',
+          component: () => import('../views/Sub/Reader.vue'),
+          meta: { title: '阅读' }
+        },
       ]
     }
   ]
