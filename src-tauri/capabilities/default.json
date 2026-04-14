@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "摸鱼小助手权限配置",
-  "windows": ["main", "underlay", "reminder_*", "novelReader_*"],
+  "windows": ["main", "underlay", "reminder_*", "novelReader"],
   "permissions": [
     "core:default",
     "opener:default",
@@ -37,7 +37,7 @@
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
-        { "path": "**", "windows": ["main", "novelReader_*", "reminder_*", "underlay"] }
+        { "path": "**", "windows": ["main", "novelReader"] }
       ]
     },
     "desktop-underlay:default",

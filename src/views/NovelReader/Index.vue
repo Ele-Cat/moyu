@@ -29,7 +29,6 @@
         </div>
         <div class="card-info">
           <h3 class="book-name">{{ book.bookName }}</h3>
-          <p class="book-author">{{ book.author }}</p>
           <div v-if="getLastReadTime(book.filePath)" class="last-read">
             <el-icon><Clock /></el-icon>
             <span>{{ formatLastRead(getLastReadTime(book.filePath)) }}</span>
@@ -57,10 +56,11 @@ import { ref, onMounted } from 'vue'
 import { useBookStore } from '@/stores/modules/book'
 import { useAppStore } from '@/stores/modules/app'
 import { Refresh, Reading, Clock, Loading } from '@element-plus/icons-vue'
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useReader } from '@/hooks/useReader'
 
 const bookStore = useBookStore()
 const appStore = useAppStore()
+const { openReaderWindow } = useReader()
 
 const loading = ref(false)
 
@@ -96,24 +96,9 @@ const refreshBooks = async () => {
 
 const openBook = async (book) => {
   try {
-    const webview = new WebviewWindow('novelReader-' + Date.now(), {
-      url: `/sub/novel-reader?book=${encodeURIComponent(book.filePath)}&format=${book.format}`,
-      title: book.bookName,
-      width: 800,
-      height: 600,
-      center: true,
-      decorations: true,
-      resizable: true,
-    })
-    
-    webview.once('tauri://created', () => {
-      bookStore.updateReadTime(book.filePath)
-      bookStore.saveSettingsToStorage()
-    })
-    
-    webview.once('tauri://error', (e) => {
-      console.error('窗口创建失败:', e)
-    })
+    await openReaderWindow(book)
+    bookStore.updateReadTime(book.filePath)
+    bookStore.saveSettingsToStorage()
   } catch (e) {
     console.error('打开窗口失败:', e)
   }
@@ -274,15 +259,6 @@ onMounted(() => {
     text-overflow: ellipsis;
     white-space: nowrap;
     line-height: 1.3;
-  }
-  
-  .book-author {
-    font-size: 12px;
-    color: #909399;
-    margin: 0 0 8px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   
   .last-read {

@@ -168,15 +168,32 @@ export const useBookStore = defineStore("book", {
       return paragraphs.map(p => `<p>${p.trim()}</p>`).join('')
     },
     
-    updateReadTime(filePath) {
+    updateReadTime(filePath, chapterIndex = 0, scrollPosition = 0) {
       this.readingHistory[filePath] = {
         ...this.readingHistory[filePath],
-        lastReadTime: Date.now()
+        lastReadTime: Date.now(),
+        chapterIndex,
+        scrollPosition
       }
     },
     
     setCurrentChapterIndex(index) {
       this.currentChapterIndex = index
+    },
+
+    saveChapterProgress(scrollPosition) {
+      if (this.currentBook?.filePath) {
+        this.readingHistory[this.currentBook.filePath] = {
+          ...this.readingHistory[this.currentBook.filePath],
+          chapterIndex: this.currentChapterIndex,
+          scrollPosition
+        }
+        this.saveSettingsToStorage()
+      }
+    },
+
+    getChapterProgress(filePath) {
+      return this.readingHistory[filePath] || { chapterIndex: 0, scrollPosition: 0 }
     },
     
     updateReaderSettings(settings) {
