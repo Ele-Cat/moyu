@@ -14,7 +14,13 @@ export const useBookStore = defineStore("book", {
         lineHeight: 28,
         bgTheme: '#f5f5f5',
         bgOpacity: 100,
-        textColor: '#333333'
+        textColor: '#333333',
+        windowBounds: {
+          x: null,
+          y: null,
+          width: 800,
+          height: 600
+        }
       }
     }
   },
@@ -188,7 +194,6 @@ export const useBookStore = defineStore("book", {
           chapterIndex: this.currentChapterIndex,
           scrollPosition
         }
-        this.saveSettingsToStorage()
       }
     },
 
@@ -200,30 +205,22 @@ export const useBookStore = defineStore("book", {
       this.readerSettings = { ...this.readerSettings, ...settings }
     },
     
-    saveSettingsToStorage() {
-      try {
-        localStorage.setItem('bookReaderSettings', JSON.stringify(this.readerSettings))
-        localStorage.setItem('bookReadingHistory', JSON.stringify(this.readingHistory))
-      } catch (e) {
-        console.error('保存设置失败:', e)
+    updateWindowBounds(bounds) {
+      this.readerSettings.windowBounds = {
+        ...this.readerSettings.windowBounds,
+        ...bounds
       }
     },
     
-    loadSettingsFromStorage() {
-      try {
-        const settings = localStorage.getItem('bookReaderSettings')
-        if (settings) {
-          this.readerSettings = JSON.parse(settings)
-        }
-        const history = localStorage.getItem('bookReadingHistory')
-        if (history) {
-          this.readingHistory = JSON.parse(history)
-        }
-      } catch (e) {
-        console.error('加载设置失败:', e)
-      }
+    getWindowBounds() {
+      return this.readerSettings.windowBounds || { x: null, y: null, width: 800, height: 600 }
     }
-  }
+  },
+  persist: {
+    key: 'book',
+    storage: localStorage,
+    paths: ['readerSettings', 'readingHistory'],
+  },
 })
 
 function formatFileSize(bytes) {

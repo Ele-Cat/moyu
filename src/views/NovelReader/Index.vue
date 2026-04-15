@@ -98,14 +98,12 @@ const openBook = async (book) => {
   try {
     await openReaderWindow(book)
     bookStore.updateReadTime(book.filePath)
-    bookStore.saveSettingsToStorage()
   } catch (e) {
     console.error('打开窗口失败:', e)
   }
 }
 
 onMounted(() => {
-  bookStore.loadSettingsFromStorage()
   refreshBooks()
 })
 </script>

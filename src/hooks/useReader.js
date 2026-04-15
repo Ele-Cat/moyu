@@ -1,18 +1,33 @@
 import { ref } from 'vue'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useBookStore } from '@/stores/modules/book'
 
 const readerWindow = ref(null)
 const readerLabel = 'novelReader'
+let bookStore = null
 
 export function useReader() {
+  if (!bookStore) {
+    bookStore = useBookStore()
+  }
+  
   async function openReaderWindow(book) {
     try {
-      await closeReaderWindow()
+      await closeCurrentWindow()
       
-      const windowWidth = 800
-      const windowHeight = 600
-      const x = Math.floor((window.screen.availWidth - windowWidth) / 2)
-      const y = Math.floor((window.screen.availHeight - windowHeight) / 2)
+      const bounds = bookStore.getWindowBounds()
+      console.log('[useReader] 当前窗口配置:', bounds)
+      const windowWidth = bounds.width || 800
+      const windowHeight = bounds.height || 600
+      
+      let x, y
+      if (bounds.x !== null && bounds.y !== null) {
+        x = bounds.x
+        y = bounds.y
+      } else {
+        x = Math.floor((window.screen.availWidth - windowWidth) / 2)
+        y = Math.floor((window.screen.availHeight - windowHeight) / 2)
+      }
       
       const url = `/sub/novel-reader?book=${encodeURIComponent(book.filePath)}&format=${book.format}`
       
@@ -23,7 +38,7 @@ export function useReader() {
         height: windowHeight,
         x,
         y,
-        center: true,
+        center: !bounds.x && !bounds.y,
         decorations: false,
         resizable: true,
         skipTaskbar: true,
@@ -41,6 +56,7 @@ export function useReader() {
       
       readerWindow.value.once('tauri://destroyed', () => {
         console.log('阅读窗口已关闭')
+        saveWindowBounds()
         readerWindow.value = null
       })
       
@@ -51,51 +67,23 @@ export function useReader() {
     }
   }
   
-  async function closeReaderWindow() {
-    if (!readerWindow.value) {
-      try {
-        const existingWindow = await WebviewWindow.getByLabel(readerLabel)
-        if (existingWindow) {
-          await existingWindow.close()
-        }
-      } catch (e) {
-        console.log('窗口不存在或已关闭')
-      }
-      return
-    }
-    
+  async function saveWindowBounds() {
     try {
-      await readerWindow.value.close()
-    } catch (e) {
-      console.log('关闭窗口失败:', e)
-    } finally {
-      readerWindow.value = null
-    }
-  }
-  
-  async function isReaderWindowOpen() {
-    if (readerWindow.value) {
-      return true
-    }
-    try {
-      const existingWindow = await WebviewWindow.getByLabel(readerLabel)
-      return !!existingWindow
-    } catch (e) {
-      return false
-    }
-  }
-  
-  async function focusReaderWindow() {
-    try {
-      const existingWindow = await WebviewWindow.getByLabel(readerLabel)
+      let existingWindow = await WebviewWindow.getByLabel(readerLabel)
       if (existingWindow) {
-        await existingWindow.setFocus()
-        return true
+        const position = await existingWindow.outerPosition()
+        const size = await existingWindow.outerSize()
+        bookStore.updateWindowBounds({
+          x: position.x,
+          y: position.y,
+          width: size.width,
+          height: size.height
+        })
+        console.log('窗口位置已保存:', { x: position.x, y: position.y, width: size.width, height: size.height })
       }
     } catch (e) {
-      console.log('聚焦窗口失败:', e)
+      console.error('保存窗口位置失败:', e)
     }
-    return false
   }
   
   async function initReaderWindow() {
@@ -111,15 +99,10 @@ export function useReader() {
 
   async function closeCurrentWindow() {
     try {
+      await saveWindowBounds()
       await initReaderWindow()
       await readerWindow.value.close()
       readerWindow.value = null
-      // const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-      // const currentWindow = getCurrentWebviewWindow()
-      // console.log('currentWindow: ', currentWindow);
-      // if (currentWindow) {
-      //   await currentWindow.close()
-      // }
     } catch (e) {
       console.error('关闭当前窗口失败:', e)
     }
@@ -128,10 +111,7 @@ export function useReader() {
   return {
     readerWindow,
     openReaderWindow,
-    closeReaderWindow,
     closeCurrentWindow,
-    isReaderWindowOpen,
-    focusReaderWindow,
     initReaderWindow,
   }
 }

@@ -193,7 +193,6 @@ const handleScroll = () => {
 
 const updateSettings = () => {
   bookStore.updateReaderSettings(localSettings.value)
-  bookStore.saveSettingsToStorage()
 }
 
 const selectTheme = (theme) => {
@@ -240,7 +239,6 @@ const closeWindow = async () => {
 }
 
 onMounted(async () => {
-  bookStore.loadSettingsFromStorage()
   localSettings.value = { ...bookStore.readerSettings }
   
   const bookPath = route.query.book
@@ -255,7 +253,6 @@ onMounted(async () => {
       
       const progress = bookStore.getChapterProgress(book.filePath)
       bookStore.updateReadTime(book.filePath, progress.chapterIndex, progress.scrollPosition)
-      bookStore.saveSettingsToStorage()
       
       if (bookStore.chapterList.length > 0) {
         const targetIndex = Math.min(progress.chapterIndex, bookStore.chapterList.length - 1)
@@ -330,6 +327,8 @@ onUnmounted(() => {
   padding-bottom: 60px;
   transition: all 0.3s ease;
   -webkit-overflow-scrolling: touch;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .chapter-content {
