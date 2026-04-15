@@ -1,53 +1,63 @@
 <template>
   <div class="bookshelf">
     <div class="toolbar">
-      <el-button @click="refreshBooks" type="primary" :icon="Refresh">刷新书架</el-button>
+      <div>
+        <el-button @click="refreshBooks" type="primary" :icon="Refresh">刷新书架</el-button>
+        <el-button @click="refreshBooks" type="primary" :icon="Setting">配置</el-button>
+      </div>
       <span class="book-count">共 {{ bookStore.sortedBooks.length }} 本书</span>
     </div>
 
-    <div v-if="loading" class="loading">
-      <el-icon class="is-loading"><Loading /></el-icon>
-      <span>加载中...</span>
-    </div>
-    
-    <div v-else-if="bookStore.sortedBooks.length > 0" class="book-grid">
-      <div
-        v-for="book in bookStore.sortedBooks"
-        :key="book.filePath"
-        class="book-card"
-        @click="openBook(book)"
-      >
-        <div class="card-cover">
-          <img v-if="book.coverUrl" :src="book.coverUrl" @error="book.coverUrl = ''" />
-          <div v-else class="cover-placeholder">
-            <span class="format-badge">{{ book.format.toUpperCase() }}</span>
-            <span class="book-icon">📚</span>
-          </div>
-          <div class="card-overlay">
-            <el-button type="primary" size="small" :icon="Reading" circle />
-          </div>
+    <el-skeleton :loading="loading" animated class="skeleton-container">
+      <template #template>
+        <div class="skeleton-grid" v-for="i in 8" :key="i">
+          <el-skeleton-item variant="image" />
+          <el-skeleton-item variant="text" />
         </div>
-        <div class="card-info">
-          <h3 class="book-name">{{ book.bookName }}</h3>
-          <div v-if="getLastReadTime(book.filePath)" class="last-read">
-            <el-icon><Clock /></el-icon>
-            <span>{{ formatLastRead(getLastReadTime(book.filePath)) }}</span>
+      </template>
+      <template #default>
+        <el-scrollbar v-if="bookStore.sortedBooks.length > 0" class="scrollbar-container">
+          <div class="book-grid">
+            <div
+              v-for="book in bookStore.sortedBooks"
+              :key="book.filePath"
+              class="book-card"
+              @click="openBook(book)"
+            >
+              <div class="card-cover">
+                <img v-if="book.coverUrl" :src="book.coverUrl" @error="book.coverUrl = ''" />
+                <div v-else class="cover-placeholder">
+                  <span class="format-badge">{{ book.format.toUpperCase() }}</span>
+                  <span class="book-icon">📚</span>
+                </div>
+                <div class="card-overlay">
+                  <el-button type="primary" size="small" :icon="Reading" circle />
+                </div>
+              </div>
+              <div class="card-info">
+                <h3 class="book-name">{{ book.bookName }}</h3>
+                <div v-if="getLastReadTime(book.filePath)" class="last-read">
+                  <el-icon><Clock /></el-icon>
+                  <span>{{ formatLastRead(getLastReadTime(book.filePath)) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
+        </el-scrollbar>
+        
+        <div v-else class="empty">
+          <div class="empty-illustration">
+            <div class="stack-books">
+              <span>📚</span>
+              <span>📖</span>
+              <span>📕</span>
+            </div>
+          </div>
+          <p class="empty-title">书架空空如也</p>
+          <p class="empty-tip">在 storagePath/books 目录下放入 txt 或 epub 文件</p>
         </div>
-      </div>
-    </div>
-    
-    <div v-else class="empty">
-      <div class="empty-illustration">
-        <div class="stack-books">
-          <span>📚</span>
-          <span>📖</span>
-          <span>📕</span>
-        </div>
-      </div>
-      <p class="empty-title">书架空空如也</p>
-      <p class="empty-tip">在 storagePath/books 目录下放入 txt 或 epub 文件</p>
-    </div>
+      </template>
+    </el-skeleton>
   </div>
 </template>
 
@@ -55,7 +65,7 @@
 import { ref, onMounted } from 'vue'
 import { useBookStore } from '@/stores/modules/book'
 import { useAppStore } from '@/stores/modules/app'
-import { Refresh, Reading, Clock, Loading } from '@element-plus/icons-vue'
+import { Refresh, Reading, Clock, Setting } from '@element-plus/icons-vue'
 import { useReader } from '@/hooks/useReader'
 
 const bookStore = useBookStore()
@@ -111,17 +121,13 @@ onMounted(() => {
 <style lang="less" scoped>
 .bookshelf {
   padding: 20px;
-  height: 100%;
-  overflow-y: auto;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
 }
 
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 0 4px;
+  margin-bottom: 20px;
   
   .book-count {
     color: #909399;
@@ -129,30 +135,26 @@ onMounted(() => {
   }
 }
 
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px;
-  color: #909399;
-  gap: 12px;
-  
-  .is-loading {
-    font-size: 32px;
-    animation: rotate 1s linear infinite;
-  }
+.skeleton-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
 }
 
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.el-skeleton__image {
+  width: 100%;
+  height: 20vh;
+  margin-bottom: 8px;
+}
+
+.scrollbar-container {
+  height: calc(100vh - 140px);
 }
 
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 .book-card {
@@ -179,7 +181,7 @@ onMounted(() => {
 
 .card-cover {
   position: relative;
-  aspect-ratio: 3/2;
+  height: 20vh;
   overflow: hidden;
   background: linear-gradient(145deg, #e8e8e8 0%, #d4d4d4 100%);
   
@@ -246,28 +248,28 @@ onMounted(() => {
 }
 
 .card-info {
-  padding: 12px;
+  padding: 10px;
   
   .book-name {
     font-size: 14px;
     font-weight: 600;
     color: #303133;
-    margin: 0 0 6px;
+    margin: 0 0 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    line-height: 1.3;
+    line-height: 1.2;
   }
   
   .last-read {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 11px;
+    font-size: 10px;
     color: #c0c4cc;
     
     .el-icon {
-      font-size: 12px;
+      font-size: 10px;
     }
   }
 }
@@ -315,25 +317,6 @@ onMounted(() => {
     font-size: 14px;
     color: #909399;
     margin: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .book-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
-  }
-  
-  .card-cover {
-    aspect-ratio: 2/3;
-  }
-  
-  .card-info {
-    padding: 10px;
-    
-    .book-name {
-      font-size: 13px;
-    }
   }
 }
 </style>

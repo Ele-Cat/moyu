@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useBookStore } from '@/stores/modules/book'
+import { useThrottleFn } from './useThrottle'
 
 const readerWindow = ref(null)
 const readerLabel = 'novelReader'
@@ -10,6 +11,11 @@ export function useReader() {
   if (!bookStore) {
     bookStore = useBookStore()
   }
+  
+  const { throttledFn: updateBoundsThrottled } = useThrottleFn((bounds) => {
+    console.log('bounds: ', bounds);
+    bookStore.updateWindowBounds(bounds)
+  }, 200)
   
   async function openReaderWindow(book) {
     try {
@@ -54,9 +60,18 @@ export function useReader() {
         readerWindow.value = null
       })
       
-      readerWindow.value.once('tauri://destroyed', () => {
+      readerWindow.value.onMoved(async (e) => {
+        const { x, y } = e.payload
+        updateBoundsThrottled({ x, y })
+      })
+      
+      readerWindow.value.onResized(async (e) => {
+        const { width, height } = e.payload
+        updateBoundsThrottled({ width, height })
+      })
+
+      readerWindow.value.once('tauri://destroyed', async () => {
         console.log('阅读窗口已关闭')
-        saveWindowBounds()
         readerWindow.value = null
       })
       
@@ -64,25 +79,6 @@ export function useReader() {
     } catch (e) {
       console.error('打开阅读窗口失败:', e)
       throw e
-    }
-  }
-  
-  async function saveWindowBounds() {
-    try {
-      let existingWindow = await WebviewWindow.getByLabel(readerLabel)
-      if (existingWindow) {
-        const position = await existingWindow.outerPosition()
-        const size = await existingWindow.outerSize()
-        bookStore.updateWindowBounds({
-          x: position.x,
-          y: position.y,
-          width: size.width,
-          height: size.height
-        })
-        console.log('窗口位置已保存:', { x: position.x, y: position.y, width: size.width, height: size.height })
-      }
-    } catch (e) {
-      console.error('保存窗口位置失败:', e)
     }
   }
   
@@ -99,10 +95,11 @@ export function useReader() {
 
   async function closeCurrentWindow() {
     try {
-      await saveWindowBounds()
       await initReaderWindow()
-      await readerWindow.value.close()
-      readerWindow.value = null
+      if (readerWindow.value) {
+        await readerWindow.value.close()
+        readerWindow.value = null
+      }
     } catch (e) {
       console.error('关闭当前窗口失败:', e)
     }

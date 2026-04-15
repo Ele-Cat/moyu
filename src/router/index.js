@@ -62,19 +62,19 @@ const router = createRouter({
         {
           path: 'video-wallpaper',
           name: 'video-wallpaper',
-          component: () => import('../views/Sub/VideoWallpaper.vue'),
+          component: () => import('../views/Wallpaper/VideoWallpaper.vue'),
           meta: { title: '视频壁纸' }
         },
         {
           path: 'reminder',
           name: 'reminder',
-          component: () => import('../views/Sub/Reminder.vue'),
+          component: () => import('../views/Tools/Reminder.vue'),
           meta: { title: '提醒' }
         },
         {
           path: 'novel-reader',
           name: 'novel-reader',
-          component: () => import('../views/Sub/Reader.vue'),
+          component: () => import('../views/NovelReader/Reader.vue'),
           meta: { title: '阅读' }
         },
       ]
