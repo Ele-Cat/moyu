@@ -2,6 +2,7 @@
   <el-dialog
     v-model="visible"
     width="600px"
+    title="系统设置"
     :close-on-click-modal="false"
     class="settings-dialog"
   >

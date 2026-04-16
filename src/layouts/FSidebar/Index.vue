@@ -59,7 +59,7 @@ function goTo(path) {
 
 <style lang="less" scoped>
 .sidebar {
-  width: 160px;
+  width: 140px;
   background: var(--bg-color-secondary);
   display: flex;
   flex-direction: column;
@@ -68,7 +68,7 @@ function goTo(path) {
   position: relative;
 
   &.collapsed {
-    width: 60px;
+    width: 48px;
   }
 }
 
@@ -144,15 +144,20 @@ function goTo(path) {
   }
 }
 
-.dark .toggle-btn {
-  .icon {
-    filter: invert(1);
-  }
-}
-
 .icon {
   width: 14px;
   height: 14px;
   filter: invert(1);
+}
+
+.dark {
+  .toggle-btn {
+    .icon {
+      filter: invert(1);
+    }
+  }
+  .nav-icon {
+    filter: invert(1);
+  }
 }
 </style>

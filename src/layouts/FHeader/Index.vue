@@ -1,15 +1,20 @@
 <template>
   <header class="titlebar" data-tauri-drag-region>
     <div class="titlebar-left">
-      <img src="/icon.ico" alt="icon" class="iconbar" />
-      <span class="title">AiO</span>
+      <img v-if="showTitleIcon" src="/icon.ico" alt="icon" class="iconbar" />
+      <span v-if="appTitle" class="title">{{ appTitle }}</span>
     </div>
     <TitleBarButtons />
   </header>
 </template>
 
 <script setup>
+import { useAppStore } from '@/stores/modules/app'
+import { storeToRefs } from 'pinia'
 import TitleBarButtons from './TitleBarButtons.vue'
+
+const appStore = useAppStore()
+const { appTitle, showTitleIcon } = storeToRefs(appStore)
 </script>
 
 <style lang="less" scoped>

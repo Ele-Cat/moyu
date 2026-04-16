@@ -200,13 +200,9 @@ const handleClose = () => {
   transition: all 0.2s;
   position: relative;
 
-  &:hover {
-    border-color: #409eff;
-  }
-
-  &.active {
-    border-color: #409eff;
-    box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  &:hover, &.active {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow);
   }
 }
 
@@ -333,7 +329,7 @@ const handleClose = () => {
   right: 6px;
   width: 18px;
   height: 18px;
-  background: #409eff;
+  background: var(--primary-color);
   color: #fff;
   border-radius: 50%;
   display: flex;

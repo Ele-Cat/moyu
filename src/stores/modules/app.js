@@ -54,6 +54,8 @@ const themes = [
 export const useAppStore = defineStore("app", {
   state: () => {
     return {
+      appTitle: 'AiO',
+      showTitleIcon: true,
       sidebarCollapsed: false,
       isDark: false,
       bossKeyEnabled: true,

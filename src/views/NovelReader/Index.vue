@@ -205,6 +205,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
     position: relative;
     overflow: hidden;
     
@@ -232,7 +233,7 @@ onMounted(() => {
     }
     
     .book-icon {
-      font-size: 48px;
+      font-size: 36px;
       opacity: 0.9;
     }
   }
