@@ -10,16 +10,25 @@ export const useBookStore = defineStore("book", {
       currentChapterIndex: 0,
       readingHistory: {},
       readerSettings: {
-        fontSize: 18,
-        lineHeight: 28,
-        bgTheme: '#f5f5f5',
-        bgOpacity: 100,
-        textColor: '#333333',
-        windowBounds: {
-          x: null,
-          y: null,
-          width: 800,
-          height: 600
+        window: {
+          style: 'normal',
+          useLastPosition: true,
+          minimizeMainWindow: true,
+          bounds: {
+            x: null,
+            y: null,
+            width: 800,
+            height: 600
+          }
+        },
+        style: {
+          fontFamily: 'Microsoft YaHei',
+          fontSize: 14,
+          lineHeight: 12,
+          bgOpacity: 100,
+          bgTheme: '#f5f5f5',
+          textOpacity: 100,
+          textColor: '#333333'
         }
       }
     }
@@ -202,18 +211,56 @@ export const useBookStore = defineStore("book", {
     },
     
     updateReaderSettings(settings) {
-      this.readerSettings = { ...this.readerSettings, ...settings }
+      if (settings.windowStyle !== undefined) {
+        this.readerSettings.window.style = settings.windowStyle
+      }
+      if (settings.useLastPosition !== undefined) {
+        this.readerSettings.window.useLastPosition = settings.useLastPosition
+      }
+      if (settings.fontFamily !== undefined) {
+        this.readerSettings.style.fontFamily = settings.fontFamily
+      }
+      if (settings.fontSize !== undefined) {
+        this.readerSettings.style.fontSize = settings.fontSize
+      }
+      if (settings.lineHeight !== undefined) {
+        this.readerSettings.style.lineHeight = settings.lineHeight
+      }
+      if (settings.bgOpacity !== undefined) {
+        this.readerSettings.style.bgOpacity = settings.bgOpacity
+      }
+      if (settings.bgTheme !== undefined) {
+        this.readerSettings.style.bgTheme = settings.bgTheme
+      }
+      if (settings.textOpacity !== undefined) {
+        this.readerSettings.style.textOpacity = settings.textOpacity
+      }
+      if (settings.textColor !== undefined) {
+        this.readerSettings.style.textColor = settings.textColor
+      }
     },
     
     updateWindowBounds(bounds) {
-      this.readerSettings.windowBounds = {
-        ...this.readerSettings.windowBounds,
+      this.readerSettings.window.bounds = {
+        ...this.readerSettings.window.bounds,
         ...bounds
       }
     },
     
     getWindowBounds() {
-      return this.readerSettings.windowBounds || { x: null, y: null, width: 800, height: 600 }
+      return this.readerSettings.window.bounds || { x: null, y: null, width: 800, height: 600 }
+    },
+    
+    getWindowStyle() {
+      return this.readerSettings.window.style || 'normal'
+    },
+    
+    getUseLastPosition() {
+      return this.readerSettings.window.useLastPosition !== false
+    },
+    
+    getStyleSettings() {
+      return this.readerSettings.style
     }
   },
   persist: {

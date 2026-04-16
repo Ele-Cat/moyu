@@ -4,17 +4,17 @@
       <img v-if="isDark" src="@/assets/svg/sun.svg" alt="sun" class="icon" />
       <img v-else src="@/assets/svg/moon.svg" alt="moon" class="icon" />
     </button>
-    <button class="window-btn settings-btn" @click="appStore.showSettings = true">
+    <button class="window-btn settings-btn" @click="appStore.showSettings = true" title="系统设置">
       <img src="@/assets/svg/settings.svg" alt="settings" class="icon" />
     </button>
-    <button class="window-btn minimize" @click="minimizeWindow">
+    <button class="window-btn minimize" @click="minimizeWindow" title="最小化">
       <img src="@/assets/svg/minimize.svg" alt="minimize" class="icon" />
     </button>
-    <button class="window-btn maximize" @click="toggleMaximize">
+    <button class="window-btn maximize" @click="toggleMaximize" :title="isMaximized ? '恢复窗口' : '最大化窗口'">
       <img v-if="isMaximized" src="@/assets/svg/restore.svg" alt="restore" class="icon" />
       <img v-else src="@/assets/svg/maximize.svg" alt="maximize" class="icon" />
     </button>
-    <button class="window-btn close" @click="closeWindow">
+    <button class="window-btn close" @click="closeWindow" title="关闭窗口">
       <img src="@/assets/svg/close.svg" alt="close" class="icon" />
     </button>
   </div>

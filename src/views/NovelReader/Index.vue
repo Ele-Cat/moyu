@@ -3,14 +3,16 @@
     <div class="toolbar">
       <div>
         <el-button @click="refreshBooks" type="primary" :icon="Refresh">刷新书架</el-button>
-        <el-button @click="refreshBooks" type="primary" :icon="Setting">配置</el-button>
+        <el-button @click="showSettings = true" type="primary" :icon="Setting">阅读配置</el-button>
       </div>
       <span class="book-count">共 {{ bookStore.sortedBooks.length }} 本书</span>
     </div>
 
+    <SettingsModal v-model="showSettings" />
+
     <el-skeleton :loading="loading" animated class="skeleton-container">
       <template #template>
-        <div class="skeleton-grid" v-for="i in 8" :key="i">
+        <div v-for="i in 8" :key="i">
           <el-skeleton-item variant="image" />
           <el-skeleton-item variant="text" />
         </div>
@@ -67,12 +69,14 @@ import { useBookStore } from '@/stores/modules/book'
 import { useAppStore } from '@/stores/modules/app'
 import { Refresh, Reading, Clock, Setting } from '@element-plus/icons-vue'
 import { useReader } from '@/hooks/useReader'
+import SettingsModal from './components/SettingsModal.vue'
 
 const bookStore = useBookStore()
 const appStore = useAppStore()
 const { openReaderWindow } = useReader()
 
-const loading = ref(false)
+const loading = ref(true)
+const showSettings = ref(false)
 
 const getLastReadTime = (filePath) => {
   return bookStore.readingHistory[filePath]?.lastReadTime || 0
@@ -127,7 +131,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
   
   .book-count {
     color: #909399;
@@ -139,22 +142,24 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
+  padding-top: 20px;
 }
 
 .el-skeleton__image {
   width: 100%;
-  height: 20vh;
+  height: 16vh;
   margin-bottom: 8px;
 }
 
 .scrollbar-container {
-  height: calc(100vh - 140px);
+  height: calc(100vh - 100px);
 }
 
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
+  padding-top: 20px;
 }
 
 .book-card {
@@ -181,7 +186,7 @@ onMounted(() => {
 
 .card-cover {
   position: relative;
-  height: 20vh;
+  height: 16vh;
   overflow: hidden;
   background: linear-gradient(145deg, #e8e8e8 0%, #d4d4d4 100%);
   

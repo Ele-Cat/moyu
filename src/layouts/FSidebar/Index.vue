@@ -8,7 +8,7 @@
         :class="{ active: isActive(item.path) }"
         @click="goTo(item.path)"
       >
-        <span class="nav-icon" :title="item.label">{{ item.icon }}</span>
+        <img :src="item.icon" class="nav-icon" :title="item.label" />
         <span class="nav-text" v-if="!appStore.sidebarCollapsed">{{ item.label }}</span>
       </div>
     </nav>
@@ -20,9 +20,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/modules/app'
+import homeIcon from '@/assets/svg/nav/home.svg'
+import newsIcon from '@/assets/svg/nav/news.svg'
+import novelIcon from '@/assets/svg/nav/novel.svg'
+import wallpaperIcon from '@/assets/svg/nav/wallpaper.svg'
+import gameIcon from '@/assets/svg/nav/game.svg'
+import toolsIcon from '@/assets/svg/nav/tools.svg'
 
 const appStore = useAppStore()
 
@@ -34,13 +40,12 @@ const route = useRoute()
 const currentRoute = computed(() => route.path)
 
 const navItems = [
-  { path: '/dashboard', label: '首页', icon: '🏠' },
-  // { path: '/music', label: '听音乐', icon: '🎵' },
-  { path: '/news', label: '刷热点', icon: '📰' },
-  { path: '/novel', label: '看小说', icon: '📖' },
-  { path: '/wallpaper', label: '换壁纸', icon: '🖼️' },
-  { path: '/game', label: '玩游戏', icon: '🎮' },
-  { path: '/tools', label: '小工具', icon: '🛠️' },
+  { path: '/dashboard', label: '首页', icon: homeIcon },
+  { path: '/news', label: '刷热点', icon: newsIcon },
+  { path: '/novel', label: '看小说', icon: novelIcon },
+  { path: '/wallpaper', label: '换壁纸', icon: wallpaperIcon },
+  { path: '/game', label: '玩游戏', icon: gameIcon },
+  { path: '/tools', label: '小工具', icon: toolsIcon },
 ]
 
 function isActive(path) {
@@ -75,11 +80,28 @@ function goTo(path) {
 .nav-item {
   display: flex;
   align-items: center;
+  height: 38px;
   padding: 8px 16px;
   cursor: pointer;
   color: var(--text-color);
   transition: all 0.3s ease;
   gap: 12px;
+
+  .nav-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: invert(0);
+  }
+
+  .nav-text {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
 
   &:hover {
     background: var(--hover-bg);
@@ -88,27 +110,15 @@ function goTo(path) {
   &.active {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-end) 100%);
     color: #fff;
+    .nav-icon {
+      filter: invert(1);
+    }
   }
 }
 
 .sidebar.collapsed .nav-item {
   padding: 8px 16px;
   justify-content: center;
-}
-
-.nav-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  width: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-text {
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
 }
 
 .toggle-btn {

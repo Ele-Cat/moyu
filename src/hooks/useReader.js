@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useBookStore } from '@/stores/modules/book'
 import { useThrottleFn } from './useThrottle'
@@ -13,26 +14,31 @@ export function useReader() {
   }
   
   const { throttledFn: updateBoundsThrottled } = useThrottleFn((bounds) => {
-    console.log('bounds: ', bounds);
     bookStore.updateWindowBounds(bounds)
-  }, 200)
+  }, 100)
   
   async function openReaderWindow(book) {
     try {
       await closeCurrentWindow()
+
+      // 打开阅读窗口时，根据设置最小化主程序
+      if (bookStore.readerSettings.window.minimizeMainWindow) {
+        await invoke('hide_to_tray')
+      }
       
-      const bounds = bookStore.getWindowBounds()
-      console.log('[useReader] 当前窗口配置:', bounds)
-      const windowWidth = bounds.width || 800
-      const windowHeight = bounds.height || 600
-      
-      let x, y
-      if (bounds.x !== null && bounds.y !== null) {
-        x = bounds.x
-        y = bounds.y
-      } else {
-        x = Math.floor((window.screen.availWidth - windowWidth) / 2)
-        y = Math.floor((window.screen.availHeight - windowHeight) / 2)
+      // 打开阅读窗口时，根据设置使用上次关闭时位置
+      let windowWidth = 800
+      let windowHeight = 600
+      let x = Math.floor((window.screen.availWidth - windowWidth) / 2)
+      let y = Math.floor((window.screen.availHeight - windowHeight) / 2)
+      if (bookStore.readerSettings.window.useLastPosition) {
+        const bounds = bookStore.getWindowBounds()
+        if (bounds.x !== null && bounds.y !== null) {
+          x = bounds.x
+          y = bounds.y
+        }
+        windowWidth = bounds.width
+        windowHeight = bounds.height
       }
       
       const url = `/sub/novel-reader?book=${encodeURIComponent(book.filePath)}&format=${book.format}`
@@ -44,7 +50,7 @@ export function useReader() {
         height: windowHeight,
         x,
         y,
-        center: !bounds.x && !bounds.y,
+        center: !bookStore.readerSettings.window.useLastPosition,
         decorations: false,
         resizable: true,
         skipTaskbar: true,

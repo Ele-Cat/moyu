@@ -1,7 +1,6 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="设置"
     width="600px"
     :close-on-click-modal="false"
     class="settings-dialog"
