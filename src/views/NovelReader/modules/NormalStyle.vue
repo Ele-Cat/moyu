@@ -4,7 +4,7 @@
       <div v-show="showHeader" class="reader-header" :style="headerStyle">
         <div class="header-left">
           <span class="close-btn" @click.stop="handleClose">✕</span>
-          <span class="menu-btn" @click.stop="showToc = true">☰</span>
+          <span class="menu-btn" @click.stop="emit('open-toc')">☰</span>
         </div>
         <span class="chapter-title">{{ bookStore.currentChapter?.title }}</span>
         <div class="header-right">
@@ -92,28 +92,6 @@
         </div>
       </div>
     </transition>
-
-    <transition name="fade">
-      <div v-if="showToc" class="toc-overlay" @click="showToc = false">
-        <div class="toc-panel" @click.stop>
-          <div class="toc-header">
-            <h3>目录</h3>
-            <button class="close-btn" @click="showToc = false">×</button>
-          </div>
-          <div class="toc-list">
-            <div
-              v-for="(chapter, index) in bookStore.chapterList"
-              :key="index"
-              class="toc-item"
-              :class="{ active: index === bookStore.currentChapterIndex }"
-              @click="goToChapter(index)"
-            >
-              {{ chapter.title }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -129,14 +107,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'open-toc'])
 
 const bookStore = useBookStore()
 const { closeCurrentWindow } = useReader()
 
 const chapterContent = computed(() => props.content)
 const showSettings = ref(false)
-const showToc = ref(false)
 const showHeader = ref(true)
 const contentRef = ref(null)
 let scrollTimer = null
@@ -227,11 +204,6 @@ const nextChapter = () => {
   if (bookStore.currentChapterIndex < bookStore.chapterList.length - 1) {
     emit('chapter-change', bookStore.currentChapterIndex + 1)
   }
-}
-
-const goToChapter = (index) => {
-  showToc.value = false
-  emit('chapter-change', index)
 }
 
 const handleClose = async () => {
@@ -356,7 +328,7 @@ const handleClose = async () => {
   }
 }
 
-.settings-overlay, .toc-overlay {
+.settings-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -367,57 +339,6 @@ const handleClose = async () => {
   align-items: flex-end;
   justify-content: center;
   z-index: 1000;
-}
-
-.toc-overlay {
-  align-items: center;
-  
-  .toc-panel {
-    background: #fff;
-    border-radius: 12px;
-    width: 85%;
-    max-width: 400px;
-    max-height: 70vh;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .toc-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #eee;
-    
-    h3 {
-      margin: 0;
-      font-size: 16px;
-      color: #333;
-    }
-  }
-  
-  .toc-list {
-    overflow-y: auto;
-    padding: 8px 0;
-  }
-  
-  .toc-item {
-    padding: 12px 20px;
-    font-size: 14px;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.2s;
-    
-    &:hover {
-      background: #f5f5f5;
-    }
-    
-    &.active {
-      color: #409eff;
-      background: #ecf5ff;
-      font-weight: 500;
-    }
-  }
 }
 
 .settings-panel {

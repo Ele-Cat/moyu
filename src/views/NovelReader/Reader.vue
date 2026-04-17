@@ -4,19 +4,24 @@
       v-if="currentMode === 'word'"
       :content="chapterContent"
       @chapter-change="handleChapterChange"
-      @navigate="handleNavigate"
+      @open-toc="showToc = true"
+      @open-settings="showSettings = true"
     />
     <ExcelStyle 
       v-else-if="currentMode === 'excel'"
       :content="chapterContent"
       @chapter-change="handleChapterChange"
-      @navigate="handleNavigate"
+      @open-toc="showToc = true"
     />
     <NormalStyle 
       v-else
       :content="chapterContent"
       @chapter-change="handleChapterChange"
+      @open-toc="showToc = true"
     />
+
+    <TocModal v-model="showToc" @loadChapter="loadChapter" />
+    <SettingsDrawer v-model="showSettings" :currentMode="currentMode" />
   </div>
 </template>
 
@@ -28,26 +33,27 @@ import { useAppStore } from '@/stores/modules/app'
 import WordStyle from './modules/WordStyle.vue'
 import ExcelStyle from './modules/ExcelStyle.vue'
 import NormalStyle from './modules/NormalStyle.vue'
+import TocModal from './components/TocModal.vue'
+import SettingsDrawer from './components/SettingsDrawer.vue'
 
 const route = useRoute()
 const bookStore = useBookStore()
 const appStore = useAppStore()
 
 const chapterContent = ref('')
+const showToc = ref(false)
+const showSettings = ref(false)
 
 const currentMode = computed(() => bookStore.getWindowStyle())
 
 const loadChapter = async (index, restoreProgress = false) => {
+  showToc.value = false
   bookStore.setCurrentChapterIndex(index)
   chapterContent.value = await bookStore.getChapterContent(index)
 }
 
 const handleChapterChange = async (index) => {
   await loadChapter(index)
-}
-
-const handleNavigate = (direction) => {
-  console.log('Navigate:', direction)
 }
 
 const initBook = async () => {

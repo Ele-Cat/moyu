@@ -24,7 +24,7 @@
             <span class="toolbar-btn" @click="nextChapter" :disabled="bookStore.currentChapterIndex >= bookStore.chapterList.length - 1">↓章</span>
           </div>
           <div class="toolbar-group">
-            <span class="toolbar-btn" @click="showToc = true">目录</span>
+            <span class="toolbar-btn" @click="emit('open-toc')">目录</span>
           </div>
         </div>
         <div class="formula-bar">
@@ -78,28 +78,6 @@
         <span class="zoom-info">100%</span>
       </div>
     </div>
-    
-    <transition name="fade">
-      <div v-if="showToc" class="toc-overlay" @click="showToc = false">
-        <div class="toc-panel" @click.stop>
-          <div class="toc-header">
-            <h3>目录</h3>
-            <span class="close-btn" @click="showToc = false">×</span>
-          </div>
-          <div class="toc-list">
-            <div
-              v-for="(chapter, index) in bookStore.chapterList"
-              :key="index"
-              class="toc-item"
-              :class="{ active: index === bookStore.currentChapterIndex }"
-              @click="goToChapter(index)"
-            >
-              {{ chapter.title }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
   </div>
 </template>
 
@@ -115,13 +93,12 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'open-toc'])
 
 const bookStore = useBookStore()
 const { closeCurrentWindow } = useReader()
 
 const chapterContent = computed(() => props.content)
-const showToc = ref(false)
 
 const prevChapter = () => {
   if (bookStore.currentChapterIndex > 0) {
@@ -133,11 +110,6 @@ const nextChapter = () => {
   if (bookStore.currentChapterIndex < bookStore.chapterList.length - 1) {
     emit('chapter-change', bookStore.currentChapterIndex + 1)
   }
-}
-
-const goToChapter = (index) => {
-  showToc.value = false
-  emit('chapter-change', index)
 }
 
 const handleBack = () => emit('navigate', 'back')
@@ -452,72 +424,6 @@ const handleClose = async () => {
   .zoom-info {
     font-size: 11px;
     color: #666;
-  }
-}
-
-.toc-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  
-  .toc-panel {
-    background: #fff;
-    border-radius: 4px;
-    width: 320px;
-    max-height: 60vh;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    
-    .toc-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #eee;
-      
-      h3 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      .close-btn {
-        cursor: pointer;
-        font-size: 18px;
-        color: #999;
-        
-        &:hover {
-          color: #333;
-        }
-      }
-    }
-    
-    .toc-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    
-    .toc-item {
-      padding: 10px 16px;
-      font-size: 13px;
-      color: #333;
-      cursor: pointer;
-      
-      &:hover {
-        background: #f5f5f5;
-      }
-      
-      &.active {
-        color: #4caf50;
-        background: #e8f5e9;
-      }
-    }
   }
 }
 

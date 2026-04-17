@@ -24,7 +24,8 @@ export const useBookStore = defineStore("book", {
         style: {
           fontFamily: 'Microsoft YaHei',
           fontSize: 14,
-          lineHeight: 12,
+          lineHeight: 20,
+          paragraphSpacing: 10,
           bgOpacity: 100,
           bgTheme: '#f5f5f5',
           textOpacity: 100,
@@ -161,7 +162,6 @@ export const useBookStore = defineStore("book", {
       try {
         let content = ''
         if (this.currentBook.format === 'txt') {
-          console.log('this.chapterList: ', this.chapterList);
           const chapter = this.chapterList[chapterIndex]
           content = chapter?.content || ''
         } else if (this.currentBook.format === 'epub') {
