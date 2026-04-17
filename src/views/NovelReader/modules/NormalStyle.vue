@@ -18,6 +18,7 @@
       :style="contentStyle"
       ref="contentRef"
       @scroll="handleScroll"
+      @click="handleTap"
     >
       <div class="chapter-content" v-html="chapterContent"></div>
     </div>

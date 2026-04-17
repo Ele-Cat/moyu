@@ -1,5 +1,8 @@
 <template>
   <div class="titlebar-right">
+    <button class="window-btn pin-btn" @click="togglePin" :title="isPinned ? '取消置顶' : '窗口置顶'">
+      <img src="@/assets/svg/pin.svg" alt="pin" class="icon" :class="{ pinned: isPinned }" />
+    </button>
     <button class="window-btn theme-btn" @click="handleToggleTheme" :title="isDark ? '切换亮色模式' : '切换暗黑模式'">
       <img v-if="isDark" src="@/assets/svg/sun.svg" alt="sun" class="icon" />
       <img v-else src="@/assets/svg/moon.svg" alt="moon" class="icon" />
@@ -33,6 +36,21 @@ const emit = defineEmits(['toggle-theme'])
 
 const { isDark, toggle: toggleDark } = useDark()
 const isMaximized = ref(false)
+const isPinned = ref(false)
+
+async function togglePin() {
+  try {
+    const win = getCurrentWindow()
+    await win.setAlwaysOnTop(!isPinned.value)
+    isPinned.value = !isPinned.value
+  } catch (e) {
+    console.error('置顶失败:', e)
+  }
+}
+
+getCurrentWindow().isAlwaysOnTop().then(top => {
+  isPinned.value = top
+})
 
 function handleToggleTheme(e) {
   toggleDark(e)
@@ -103,6 +121,10 @@ getCurrentWindow().isMaximized().then(max => {
     width: 14px;
     height: 14px;
     filter: var(--icon-filter);
+
+    &.pinned {
+      transform: rotate(45deg);
+    }
   }
 
   &.close:hover {
