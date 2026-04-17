@@ -19,23 +19,17 @@
         </el-form-item>
 
         <el-form-item label="字体大小:">
-          <el-select v-model="readerSettings.style.fontSize" size="small" class="form-select">
-            <el-option v-for="size in fontSizes" :key="size" :label="size + 'px'" :value="size" />
-          </el-select>
+          <el-slider size="small" v-model="readerSettings.style.fontSize" :min="12" :max="64" :step="2" show-input :format-tooltip="(val) => val + 'px'" class="form-slider" />
           <el-button size="small" class="form-btn" @click="readerSettings.style.fontSize = 14">默认</el-button>
         </el-form-item>
 
         <el-form-item label="行高:">
-          <el-select v-model="readerSettings.style.lineHeight" size="small" class="form-select">
-            <el-option v-for="height in lineHeights" :key="height" :label="height + 'px'" :value="height" />
-          </el-select>
-          <el-button size="small" class="form-btn" @click="readerSettings.style.lineHeight = 20">默认</el-button>
+          <el-slider size="small" v-model="readerSettings.style.lineHeight" :min="1" :max="4" :step="0.2" show-input class="form-slider" />
+          <el-button size="small" class="form-btn" @click="readerSettings.style.lineHeight = 1.2">默认</el-button>
         </el-form-item>
 
         <el-form-item label="段落间距:">
-          <el-select v-model="readerSettings.style.paragraphSpacing" size="small" class="form-select">
-            <el-option v-for="space in paragraphSpacings" :key="space" :label="space + 'px'" :value="space" />
-          </el-select>
+          <el-slider size="small" v-model="readerSettings.style.paragraphSpacing" :min="0" :max="32" :step="2" show-input class="form-slider" />
           <el-button size="small" class="form-btn" @click="readerSettings.style.paragraphSpacing = 10">默认</el-button>
         </el-form-item>
 
@@ -44,8 +38,7 @@
         </el-form-item>
 
         <el-form-item label="背景透明度:" v-if="isNormal">
-          <el-slider size="small" v-model="readerSettings.style.bgOpacity" :min="1" :max="100" :format-tooltip="(val) => val + '%' " class="form-slider" />
-          <span class="slider-value">{{ readerSettings.style.bgOpacity }}%</span>
+          <el-slider size="small" v-model="readerSettings.style.bgOpacity" :min="1" :max="100" show-input :format-tooltip="(val) => val + '%' " class="form-slider" />
         </el-form-item>
 
         <el-form-item label="文字颜色:">
@@ -53,8 +46,7 @@
         </el-form-item>
 
         <el-form-item label="文字透明度:" v-if="isNormal">
-          <el-slider size="small" v-model="readerSettings.style.textOpacity" :min="1" :max="100" :format-tooltip="(val) => val + '%' " class="form-slider" />
-          <span class="slider-value">{{ readerSettings.style.textOpacity }}%</span>
+          <el-slider size="small" v-model="readerSettings.style.textOpacity" :min="1" :max="100" show-input :format-tooltip="(val) => val + '%' " class="form-slider" />
         </el-form-item>
       </el-form>
     </div>
@@ -88,10 +80,6 @@ const dialogVisible = computed({
   set: (val) => emit('update:modelValue', val)
 })
 
-const fontSizes = [12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]
-const lineHeights = [12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
-const paragraphSpacings = [8, 12, 16, 20, 24, 28, 32]
-
 const handleClose = () => {
   dialogVisible.value = false
 }
@@ -105,15 +93,23 @@ const handleClose = () => {
 }
 
 .form-select {
-  max-width: 200px;
+  max-width: 240px;
+}
+  
+.form-slider {
+  max-width: 240px;
+
+  :deep(.el-slider__runway.show-input) {
+    margin-right: 20px;
+  }
+
+  :deep(.el-slider__input) {
+    width: 88px;
+  }
 }
 
 .form-btn {
   margin: 0 8px;
-}
-  
-.form-slider {
-  max-width: 200px;
 }
 
 .slider-value {

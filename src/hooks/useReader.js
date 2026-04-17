@@ -41,7 +41,7 @@ export function useReader() {
         windowHeight = bounds.height
       }
       
-      const url = `/sub/novel-reader?book=${encodeURIComponent(book.filePath)}&format=${book.format}`
+      const url = `/sub/novel-reader?book=${encodeURIComponent(book.bookName)}&format=${book.format}`
       
       readerWindow.value = new WebviewWindow(readerLabel, {
         url,

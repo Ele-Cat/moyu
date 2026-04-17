@@ -13,7 +13,7 @@ export const useBookStore = defineStore("book", {
         window: {
           style: 'normal',
           useLastPosition: true,
-          minimizeMainWindow: true,
+          minimizeMainWindow: false,
           bounds: {
             x: null,
             y: null,
@@ -24,7 +24,7 @@ export const useBookStore = defineStore("book", {
         style: {
           fontFamily: 'Microsoft YaHei',
           fontSize: 14,
-          lineHeight: 20,
+          lineHeight: 1.4,
           paragraphSpacing: 10,
           bgOpacity: 100,
           bgTheme: '#f5f5f5',
@@ -184,6 +184,9 @@ export const useBookStore = defineStore("book", {
     },
     
     updateReadTime(filePath, chapterIndex = 0, scrollPosition = 0) {
+      console.log('filePath: ', filePath);
+      console.log('chapterIndex: ', chapterIndex);
+      console.log('scrollPosition: ', scrollPosition);
       this.readingHistory[filePath] = {
         ...this.readingHistory[filePath],
         lastReadTime: Date.now(),
@@ -254,14 +257,6 @@ export const useBookStore = defineStore("book", {
     getWindowStyle() {
       return this.readerSettings.window.style || 'normal'
     },
-    
-    getUseLastPosition() {
-      return this.readerSettings.window.useLastPosition !== false
-    },
-    
-    getStyleSettings() {
-      return this.readerSettings.style
-    }
   },
   persist: {
     key: 'book',

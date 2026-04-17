@@ -50,6 +50,7 @@ const loadChapter = async (index, restoreProgress = false) => {
   showToc.value = false
   bookStore.setCurrentChapterIndex(index)
   chapterContent.value = await bookStore.getChapterContent(index)
+  bookStore.updateReadTime(bookStore.currentBook.bookName, index)
 }
 
 const handleChapterChange = async (index) => {
@@ -57,18 +58,18 @@ const handleChapterChange = async (index) => {
 }
 
 const initBook = async () => {
-  const bookPath = route.query.book
+  const bookName = route.query.book
   const format = route.query.format
   
-  if (bookPath && format) {
+  if (bookName && format) {
     await bookStore.scanBooks(appStore.storagePath)
-    const book = bookStore.books.find(b => b.filePath === decodeURIComponent(bookPath))
+    const book = bookStore.books.find(b => b.bookName === decodeURIComponent(bookName))
     
     if (book) {
       await bookStore.loadBook(book)
       
-      const progress = bookStore.getChapterProgress(book.filePath)
-      bookStore.updateReadTime(book.filePath, progress.chapterIndex, progress.scrollPosition)
+      const progress = bookStore.getChapterProgress(book.bookName)
+      bookStore.updateReadTime(book.bookName, progress.chapterIndex, progress.scrollPosition)
       
       if (bookStore.chapterList.length > 0) {
         const targetIndex = Math.min(progress.chapterIndex, bookStore.chapterList.length - 1)

@@ -65,12 +65,11 @@ watch(() => readerSettings.value.style, (newVal) => {
 const contentStyle = computed(() => ({
   fontFamily: readerSettings.value.style?.fontFamily || 'Microsoft YaHei',
   fontSize: (readerSettings.value.style?.fontSize || 14) + 'px',
-  lineHeight: (readerSettings.value.style?.lineHeight || 20) + 'px',
+  lineHeight: readerSettings.value.style?.lineHeight || 1.2,
   color: readerSettings.value.style?.textColor || '#000000',
-  opacity: (readerSettings.value.style?.textOpacity || 100) / 100
 }))
 
-const paragraphSpacing = computed(() => (readerSettings.value.style?.paragraphSpacing || 10) + 'px')
+const paragraphSpacing = computed(() => (readerSettings.value.style?.paragraphSpacing || 0) + 'px')
 
 const prevChapter = () => {
   if (bookStore.currentChapterIndex > 0) {
