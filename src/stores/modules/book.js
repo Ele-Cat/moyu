@@ -14,22 +14,60 @@ export const useBookStore = defineStore("book", {
           style: 'normal',
           useLastPosition: true,
           minimizeMainWindow: false,
+        },
+        word: {
           bounds: {
             x: null,
             y: null,
             width: 800,
             height: 600
+          },
+          style: {
+            fontFamily: 'Microsoft YaHei',
+            fontSize: 14,
+            lineHeight: 1.2,
+            paragraphSpacing: 8,
+            textColor: '#000000',
           }
         },
-        style: {
-          fontFamily: 'Microsoft YaHei',
-          fontSize: 14,
-          lineHeight: 1.4,
-          paragraphSpacing: 10,
-          bgOpacity: 100,
-          bgTheme: '#f5f5f5',
-          textOpacity: 100,
-          textColor: '#333333'
+        excel: {
+          bounds: {
+            x: null,
+            y: null,
+            width: 800,
+            height: 600
+          },
+          style:{
+            fontFamily: 'Microsoft YaHei',
+            fontSize: 12,
+            lineHeight: 1.5,
+            paragraphSpacing: 8,
+            bgOpacity: 100,
+            bgTheme: '#f5f5f5',
+            textOpacity: 100,
+            textColor: '#333333',
+            cellPadding: 8,
+            borderColor: '#d9d9d9',
+            headerBgColor: '#f0f0f0'
+          }
+        },
+        normal: {
+          bounds: {
+            x: null,
+            y: null,
+            width: 800,
+            height: 600
+          },
+          style: {
+            fontFamily: 'Microsoft YaHei',
+            fontSize: 14,
+            lineHeight: 1.4,
+            paragraphSpacing: 10,
+            bgOpacity: 100,
+            bgTheme: '#f5f5f5',
+            textOpacity: 100,
+            textColor: '#333333'
+          },
         }
       }
     }
@@ -37,12 +75,16 @@ export const useBookStore = defineStore("book", {
   getters: {
     sortedBooks: (state) => {
       return [...state.books].sort((a, b) => {
-        const timeA = state.readingHistory[a.filePath]?.lastReadTime || 0
-        const timeB = state.readingHistory[b.filePath]?.lastReadTime || 0
+        const timeA = state.readingHistory[a.bookName]?.lastReadTime || 0
+        const timeB = state.readingHistory[b.bookName]?.lastReadTime || 0
         return timeB - timeA
       })
     },
-    currentChapter: (state) => state.chapterList[state.currentChapterIndex]
+    currentChapter: (state) => state.chapterList[state.currentChapterIndex],
+    currentStyle: (state) => {
+      const styleMode = state.readerSettings.window?.style || 'normal'
+      return state.readerSettings[styleMode]?.style || state.readerSettings.normal?.style || {}
+    }
   },
   actions: {
     async scanBooks(storagePath) {
@@ -183,12 +225,14 @@ export const useBookStore = defineStore("book", {
       return paragraphs.map(p => `<p>${p.trim()}</p>`).join('')
     },
     
-    updateReadTime(filePath, chapterIndex = 0, scrollPosition = 0) {
-      console.log('filePath: ', filePath);
-      console.log('chapterIndex: ', chapterIndex);
-      console.log('scrollPosition: ', scrollPosition);
-      this.readingHistory[filePath] = {
-        ...this.readingHistory[filePath],
+    updateReadTime(bookName) {
+      const lastReadTime = Date.now()
+      this.readingHistory[bookName]['lastReadTime'] = lastReadTime
+    },
+
+    updateReadProgress(bookName, chapterIndex = 0, scrollPosition = 0) {
+      this.readingHistory[bookName] = {
+        ...this.readingHistory[bookName],
         lastReadTime: Date.now(),
         chapterIndex,
         scrollPosition
@@ -200,62 +244,111 @@ export const useBookStore = defineStore("book", {
     },
 
     saveChapterProgress(scrollPosition) {
-      if (this.currentBook?.filePath) {
-        this.readingHistory[this.currentBook.filePath] = {
-          ...this.readingHistory[this.currentBook.filePath],
+      if (this.currentBook?.bookName) {
+        this.readingHistory[this.currentBook.bookName] = {
+          ...this.readingHistory[this.currentBook.bookName],
           chapterIndex: this.currentChapterIndex,
           scrollPosition
         }
       }
     },
 
-    getChapterProgress(filePath) {
-      return this.readingHistory[filePath] || { chapterIndex: 0, scrollPosition: 0 }
+    getChapterProgress(bookName) {
+      return this.readingHistory[bookName] || { chapterIndex: 0, scrollPosition: 0 }
     },
     
     updateReaderSettings(settings) {
+      const currentStyle = this.readerSettings.window.style || 'normal'
+      
       if (settings.windowStyle !== undefined) {
         this.readerSettings.window.style = settings.windowStyle
+        currentStyle = settings.windowStyle
       }
       if (settings.useLastPosition !== undefined) {
         this.readerSettings.window.useLastPosition = settings.useLastPosition
       }
+      
+      if (!this.readerSettings[currentStyle]) {
+        this.readerSettings[currentStyle] = {
+          bounds: { x: null, y: null, width: 800, height: 600 },
+          style: {}
+        }
+      }
+      
+      if (!this.readerSettings[currentStyle].style) {
+        this.readerSettings[currentStyle].style = {}
+      }
+      
       if (settings.fontFamily !== undefined) {
-        this.readerSettings.style.fontFamily = settings.fontFamily
+        this.readerSettings[currentStyle].style.fontFamily = settings.fontFamily
       }
       if (settings.fontSize !== undefined) {
-        this.readerSettings.style.fontSize = settings.fontSize
+        this.readerSettings[currentStyle].style.fontSize = settings.fontSize
       }
       if (settings.lineHeight !== undefined) {
-        this.readerSettings.style.lineHeight = settings.lineHeight
+        this.readerSettings[currentStyle].style.lineHeight = settings.lineHeight
+      }
+      if (settings.paragraphSpacing !== undefined) {
+        this.readerSettings[currentStyle].style.paragraphSpacing = settings.paragraphSpacing
       }
       if (settings.bgOpacity !== undefined) {
-        this.readerSettings.style.bgOpacity = settings.bgOpacity
+        this.readerSettings[currentStyle].style.bgOpacity = settings.bgOpacity
       }
       if (settings.bgTheme !== undefined) {
-        this.readerSettings.style.bgTheme = settings.bgTheme
+        this.readerSettings[currentStyle].style.bgTheme = settings.bgTheme
       }
       if (settings.textOpacity !== undefined) {
-        this.readerSettings.style.textOpacity = settings.textOpacity
+        this.readerSettings[currentStyle].style.textOpacity = settings.textOpacity
       }
       if (settings.textColor !== undefined) {
-        this.readerSettings.style.textColor = settings.textColor
+        this.readerSettings[currentStyle].style.textColor = settings.textColor
+      }
+      if (settings.margin !== undefined) {
+        this.readerSettings[currentStyle].style.margin = settings.margin
+      }
+      if (settings.columnCount !== undefined) {
+        this.readerSettings[currentStyle].style.columnCount = settings.columnCount
+      }
+      if (settings.columnGap !== undefined) {
+        this.readerSettings[currentStyle].style.columnGap = settings.columnGap
+      }
+      if (settings.cellPadding !== undefined) {
+        this.readerSettings[currentStyle].style.cellPadding = settings.cellPadding
+      }
+      if (settings.borderColor !== undefined) {
+        this.readerSettings[currentStyle].style.borderColor = settings.borderColor
+      }
+      if (settings.headerBgColor !== undefined) {
+        this.readerSettings[currentStyle].style.headerBgColor = settings.headerBgColor
       }
     },
     
     updateWindowBounds(bounds) {
-      this.readerSettings.window.bounds = {
-        ...this.readerSettings.window.bounds,
+      const currentStyle = this.readerSettings.window.style || 'normal'
+      if (!this.readerSettings[currentStyle]) {
+        this.readerSettings[currentStyle] = {
+          bounds: { x: null, y: null, width: 800, height: 600 },
+          style: {}
+        }
+      }
+      this.readerSettings[currentStyle].bounds = {
+        ...this.readerSettings[currentStyle].bounds,
         ...bounds
       }
     },
     
     getWindowBounds() {
-      return this.readerSettings.window.bounds || { x: null, y: null, width: 800, height: 600 }
+      const currentStyle = this.readerSettings.window.style || 'normal'
+      return this.readerSettings[currentStyle]?.bounds || { x: null, y: null, width: 800, height: 600 }
     },
     
     getWindowStyle() {
       return this.readerSettings.window.style || 'normal'
+    },
+    
+    getCurrentStyle() {
+      const styleMode = this.readerSettings.window?.style || 'normal'
+      return this.readerSettings[styleMode]?.style || this.readerSettings.normal?.style || {}
     },
   },
   persist: {

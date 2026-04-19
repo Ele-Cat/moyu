@@ -1,24 +1,24 @@
 <template>
   <div class="reader-word">
     <div class="word-titlebar">
-      <div class="doc-name">{{ bookStore.currentBook?.bookName || '文档' }} - {{ bookStore.currentChapter?.title }}</div>
+      <div class="doc-name">{{ bookStore.currentBook?.bookName || '文档' }}</div>
       <div class="window-btn">
         <img src="@/assets/svg/close.svg" alt="close" @click="handleClose" />
       </div>
     </div>
     <div class="word-toolbar"></div>
     
-    <el-scrollbar class="word-content" ref="scrollbarRef">
+    <el-scrollbar class="word-content" ref="scrollbarRef" @scroll="handleScroll">
       <div class="page-content" v-html="content" :style="contentStyle"></div>
     </el-scrollbar>
     
     <div class="word-statusbar">
       <div class="status-container">
-        <span class="status-item">第 {{ bookStore.currentChapterIndex + 1 }} 章，共 {{ bookStore.chapterList.length }} 章</span>
+        <span class="status-item">{{ bookStore.currentChapter?.title }}</span>
         <span class="status-item">{{ content.length }} 个字</span>
         <span class="status-item status-btn" @click="emit('open-toc')">目录</span>
-        <span class="status-item status-btn" :class="{'disabled': bookStore.currentChapterIndex <= 0}" @click="prevChapter" title="上一章">↑</span>
-        <span class="status-item status-btn" :class="{'disabled': bookStore.currentChapterIndex >= bookStore.chapterList.length - 1}" @click="nextChapter" title="下一章">↓</span>
+        <span class="status-item status-btn" :class="{'disabled': bookStore.currentChapterIndex <= 0}" @click="prevChapter" title="上一章">←</span>
+        <span class="status-item status-btn" :class="{'disabled': bookStore.currentChapterIndex >= bookStore.chapterList.length - 1}" @click="nextChapter" title="下一章">→</span>
         <img src="@/assets/svg/settings.svg" class="status-item status-btn" alt="refresh" @click="emit('open-settings')" title="设置" />
       </div>
       <div>100%</div>
@@ -27,10 +27,10 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useBookStore } from '@/stores/modules/book'
-import { storeToRefs } from 'pinia'
 import { useReader } from '@/hooks/useReader'
+import { useThrottleFn } from '@/hooks/useThrottle'
 
 const props = defineProps({
   content: {
@@ -42,44 +42,52 @@ const props = defineProps({
 const emit = defineEmits(['open-toc', 'open-settings', 'chapter-change'])
 
 const bookStore = useBookStore()
-const { readerSettings } = storeToRefs(bookStore)
 const { closeCurrentWindow } = useReader()
 
 const scrollbarRef = ref(null)
-watch(() => props.content, (newVal) => {
-  scrollbarRef.value?.scrollTo({ top: 0 })
-})
+const isProgramScrolling = ref(false)
 
-bookStore.$subscribe((mutate, state) => {
-  console.log("bookStore", mutate, state);
-  // localStorage.setItem("talk", JSON.stringify(talkList.value));
-});
-
-watch(() => readerSettings.value.style, (newVal) => {
-  console.log("style", newVal);
-}, {
-  immediate: true,
-  deep: true
-})
+watch(() => props.content, () => {
+  const progress = bookStore.getChapterProgress(bookStore.currentBook?.bookName)
+  isProgramScrolling.value = true
+  nextTick(() => {
+    scrollbarRef.value?.scrollTo({ top: progress.scrollPosition || 0 })
+    setTimeout(() => {
+      isProgramScrolling.value = false
+    }, 100)
+  })
+}, { immediate: true })
 
 const contentStyle = computed(() => ({
-  fontFamily: readerSettings.value.style?.fontFamily || 'Microsoft YaHei',
-  fontSize: (readerSettings.value.style?.fontSize || 14) + 'px',
-  lineHeight: readerSettings.value.style?.lineHeight || 1.2,
-  color: readerSettings.value.style?.textColor || '#000000',
+  fontFamily: bookStore.currentStyle?.fontFamily || 'Microsoft YaHei',
+  fontSize: (bookStore.currentStyle?.fontSize || 14) + 'px',
+  lineHeight: bookStore.currentStyle?.lineHeight || 1.2,
+  color: bookStore.currentStyle?.textColor || '#000000',
 }))
 
-const paragraphSpacing = computed(() => (readerSettings.value.style?.paragraphSpacing || 0) + 'px')
+const paragraphSpacing = computed(() => (bookStore.currentStyle?.paragraphSpacing || 0) + 'px')
 
 const prevChapter = () => {
   if (bookStore.currentChapterIndex > 0) {
     emit('chapter-change', bookStore.currentChapterIndex - 1)
+    scrollbarRef.value?.scrollTo({ top: 0 })
   }
 }
 
 const nextChapter = () => {
   if (bookStore.currentChapterIndex < bookStore.chapterList.length - 1) {
     emit('chapter-change', bookStore.currentChapterIndex + 1)
+    scrollbarRef.value?.scrollTo({ top: 0 })
+  }
+}
+
+const { throttledFn: updateScrollThrottled } = useThrottleFn((scrollTop) => {
+  bookStore.updateReadProgress(bookStore.currentBook?.bookName, bookStore.currentChapterIndex, scrollTop)
+}, 100)
+
+const handleScroll = (e) => {
+  if (!isProgramScrolling.value) {
+    updateScrollThrottled(e.scrollTop)
   }
 }
 
@@ -163,9 +171,6 @@ const handleClose = async () => {
 
 .word-content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   overflow: hidden;
   padding: 0 16px;
   user-select: text;
@@ -175,7 +180,7 @@ const handleClose = async () => {
     max-width: 790px;
     min-width: 400px;
     background: #fff;
-    margin: 16px 0;
+    margin: 16px auto;
     padding: 40px 50px;
     font-size: 15px;
     line-height: 2;

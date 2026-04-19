@@ -6,6 +6,7 @@
         :key="index"
         class="toc-item"
         :class="{ active: index === bookStore.currentChapterIndex }"
+        :title="chapter.title"
         @click="goToChapter(index)"
       >
         {{ chapter.title }}
@@ -36,7 +37,7 @@ const scrollbarRef = ref()
 watch(() => props.modelValue, (newVal) => {
   if (newVal) {
     nextTick(() => {
-      const scrollTop = bookStore.currentChapterIndex * 40
+      const scrollTop = bookStore.currentChapterIndex * 36
       scrollbarRef.value.setScrollTop(scrollTop)
     })
   }
@@ -52,8 +53,8 @@ const goToChapter = (index) => {
 <style lang="less" scoped>
 .toc-item {
   padding: 0 12px;
-  height: 40px;
-  line-height: 40px;
+  height: 36px;
+  line-height: 36px;
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.2s;

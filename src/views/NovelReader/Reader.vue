@@ -49,8 +49,9 @@ const currentMode = computed(() => bookStore.getWindowStyle())
 const loadChapter = async (index, restoreProgress = false) => {
   showToc.value = false
   bookStore.setCurrentChapterIndex(index)
+  const progress = bookStore.getChapterProgress(bookStore.currentBook.bookName)
   chapterContent.value = await bookStore.getChapterContent(index)
-  bookStore.updateReadTime(bookStore.currentBook.bookName, index)
+  bookStore.updateReadProgress(bookStore.currentBook.bookName, index, restoreProgress ? progress.scrollPosition : 0)
 }
 
 const handleChapterChange = async (index) => {
@@ -69,7 +70,7 @@ const initBook = async () => {
       await bookStore.loadBook(book)
       
       const progress = bookStore.getChapterProgress(book.bookName)
-      bookStore.updateReadTime(book.bookName, progress.chapterIndex, progress.scrollPosition)
+      bookStore.updateReadProgress(book.bookName, progress.chapterIndex, progress.scrollPosition)
       
       if (bookStore.chapterList.length > 0) {
         const targetIndex = Math.min(progress.chapterIndex, bookStore.chapterList.length - 1)

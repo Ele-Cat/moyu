@@ -22,7 +22,7 @@
           <div class="book-grid">
             <div
               v-for="book in bookStore.sortedBooks"
-              :key="book.filePath"
+              :key="book.bookName"
               class="book-card"
               @click="openBook(book)"
             >
@@ -38,9 +38,9 @@
               </div>
               <div class="card-info">
                 <h3 class="book-name">{{ book.bookName }}</h3>
-                <div v-if="getLastReadTime(book.filePath)" class="last-read">
+                <div v-if="getLastReadTime(book.bookName)" class="last-read">
                   <el-icon><Clock /></el-icon>
-                  <span>{{ formatLastRead(getLastReadTime(book.filePath)) }}</span>
+                  <span>{{ formatLastRead(getLastReadTime(book.bookName)) }}</span>
                 </div>
               </div>
             </div>
@@ -78,8 +78,8 @@ const { openReaderWindow } = useReader()
 const loading = ref(true)
 const showSettings = ref(false)
 
-const getLastReadTime = (filePath) => {
-  return bookStore.readingHistory[filePath]?.lastReadTime || 0
+const getLastReadTime = (bookName) => {
+  return bookStore.readingHistory[bookName]?.lastReadTime || 0
 }
 
 const formatLastRead = (timestamp) => {
@@ -111,7 +111,7 @@ const refreshBooks = async () => {
 const openBook = async (book) => {
   try {
     await openReaderWindow(book)
-    bookStore.updateReadTime(book.filePath)
+    bookStore.updateReadTime(book.bookName)
   } catch (e) {
     console.error('打开窗口失败:', e)
   }
