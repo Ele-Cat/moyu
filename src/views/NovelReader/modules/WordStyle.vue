@@ -1,5 +1,5 @@
 <template>
-  <div class="reader-word">
+  <div class="reader-word" @keydown="handleKeyDown" tabindex="0" ref="containerRef">
     <div class="word-titlebar">
       <div class="doc-name">{{ bookStore.currentBook?.bookName || '文档' }}</div>
       <div class="window-btn">
@@ -21,13 +21,21 @@
         <span class="status-item status-btn" :class="{'disabled': bookStore.currentChapterIndex >= bookStore.chapterList.length - 1}" @click="nextChapter" title="下一章">→</span>
         <img src="@/assets/svg/settings.svg" class="status-item status-btn" alt="refresh" @click="emit('open-settings')" title="设置" />
       </div>
-      <div>100%</div>
+      <div class="status-right">
+        <span class="auto-scroll-status" v-if="isAutoScrolling">
+          {{ isAutoScrolling ? '滚动中' : '已暂停' }}
+        </span>
+        <span class="status-item status-btn" @click="toggleAutoScroll" :class="{'active': isAutoScrolling}" title="自动滚动">
+          {{ isAutoScrolling ? '⏸' : '▶' }}
+        </span>
+        <span v-if="isAutoScrolling" class="status-item speed-indicator">{{ scrollSpeed }}</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useBookStore } from '@/stores/modules/book'
 import { useReader } from '@/hooks/useReader'
 import { useThrottleFn } from '@/hooks/useThrottle'
@@ -45,7 +53,14 @@ const bookStore = useBookStore()
 const { closeCurrentWindow } = useReader()
 
 const scrollbarRef = ref(null)
+const containerRef = ref(null)
 const isProgramScrolling = ref(false)
+const isAutoScrolling = ref(false)
+let autoScrollTimer = null
+
+const scrollSpeed = computed(() => {
+  return bookStore.currentStyle?.scrollSpeed || 30
+})
 
 watch(() => props.content, () => {
   const progress = bookStore.getChapterProgress(bookStore.currentBook?.bookName)
@@ -57,6 +72,13 @@ watch(() => props.content, () => {
     }, 100)
   })
 }, { immediate: true })
+
+watch(() => scrollSpeed.value, () => {
+  if (isAutoScrolling.value) {
+    stopAutoScroll()
+    startAutoScroll()
+  }
+})
 
 const contentStyle = computed(() => ({
   fontFamily: bookStore.currentStyle?.fontFamily || 'Microsoft YaHei',
@@ -89,9 +111,74 @@ const handleScroll = (e) => {
   if (!isProgramScrolling.value) {
     updateScrollThrottled(e.scrollTop)
   }
+  if (isAutoScrolling.value) {
+    const maxScroll = scrollbarRef.value?.wrapRef?.scrollHeight - scrollbarRef.value?.wrapRef?.clientHeight || 0
+    if (e.scrollTop >= maxScroll - 10) {
+      stopAutoScroll()
+    }
+  }
 }
 
+const startAutoScroll = () => {
+  if (autoScrollTimer) return
+  isAutoScrolling.value = true
+  const speed = scrollSpeed.value
+  const interval = 50
+  const step = speed / 10
+  
+  autoScrollTimer = setInterval(() => {
+    if (scrollbarRef.value?.wrapRef) {
+      const scrollTop = scrollbarRef.value.wrapRef.scrollTop
+      const maxScroll = scrollbarRef.value.wrapRef.scrollHeight - scrollbarRef.value.wrapRef.clientHeight
+      
+      if (scrollTop >= maxScroll) {
+        stopAutoScroll()
+        return
+      }
+      
+      isProgramScrolling.value = true
+      scrollbarRef.value.wrapRef.scrollTop += step
+      updateScrollThrottled(scrollbarRef.value.wrapRef.scrollTop)
+      setTimeout(() => {
+        isProgramScrolling.value = false
+      }, 10)
+    }
+  }, interval)
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollTimer) {
+    clearInterval(autoScrollTimer)
+    autoScrollTimer = null
+  }
+  isAutoScrolling.value = false
+}
+
+const toggleAutoScroll = () => {
+  if (isAutoScrolling.value) {
+    stopAutoScroll()
+  } else {
+    startAutoScroll()
+  }
+}
+
+const handleKeyDown = (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault()
+    toggleAutoScroll()
+  }
+}
+
+onMounted(() => {
+  containerRef.value?.focus()
+})
+
+onUnmounted(() => {
+  stopAutoScroll()
+})
+
 const handleClose = async () => {
+  stopAutoScroll()
   await closeCurrentWindow()
 }
 </script>
@@ -212,22 +299,57 @@ const handleClose = async () => {
     align-items: center;
 
     .status-item {
-      margin-right: 20px;
+      margin-right: 12px;
 
       &.status-btn {
         cursor: pointer;
+        padding: 0 4px;
+        border-radius: 2px;
+        transition: background 0.2s;
           
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+        
         &.disabled {
           opacity: 0.8;
           cursor: not-allowed;
+          
+          &:hover {
+            background: none;
+          }
+        }
+        
+        &.active {
+          color: #ffd04b;
         }
       }
     }
     
     img.status-item {
-      width: 11px;
-      height: 11px;
+      width: 18px;
+      height: 18px;
       filter: var(--icon-filter);
+    }
+  }
+  
+  .status-right {
+    display: flex;
+    align-items: center;
+    
+    .auto-scroll-status {
+      margin-right: 12px;
+      color: #ffd04b;
+      font-weight: 500;
+    }
+    
+    .speed-indicator {
+      min-width: 24px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 0 6px;
+      margin-left: 4px;
     }
   }
 }

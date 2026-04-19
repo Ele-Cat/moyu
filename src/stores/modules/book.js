@@ -28,6 +28,7 @@ export const useBookStore = defineStore("book", {
             lineHeight: 1.2,
             paragraphSpacing: 8,
             textColor: '#000000',
+            scrollSpeed: 30
           }
         },
         excel: {
@@ -320,6 +321,9 @@ export const useBookStore = defineStore("book", {
       }
       if (settings.headerBgColor !== undefined) {
         this.readerSettings[currentStyle].style.headerBgColor = settings.headerBgColor
+      }
+      if (settings.scrollSpeed !== undefined) {
+        this.readerSettings[currentStyle].style.scrollSpeed = settings.scrollSpeed
       }
     },
     
